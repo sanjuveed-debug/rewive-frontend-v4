@@ -4,7 +4,15 @@ import { getAreaKeyFromPath, getArea } from './areas';
 function titleFor(pathname: string) {
   const area = getArea(getAreaKeyFromPath(pathname));
   const item = area.items.find((i) => (i.end ? pathname === i.to : pathname.startsWith(i.to)));
-  const screenLabel = item?.label ?? (pathname.startsWith('/insights/signals') ? 'Signal Studio' : 'Rewive');
+  const screenLabel =
+    item?.label ??
+    (pathname.startsWith('/insights/signals')
+      ? 'Signal Studio'
+      : pathname.startsWith('/build/agent-studio')
+        ? 'Unified Agent Studio'
+        : pathname.startsWith('/build/solutions')
+          ? 'Solution Design'
+          : 'Rewive');
   if (area.key === 'operate' && pathname === '/') return screenLabel;
   return `${area.label} / ${screenLabel}`;
 }

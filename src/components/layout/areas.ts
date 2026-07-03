@@ -3,7 +3,7 @@ export interface AreaNavItem {
   label: string;
   end?: boolean;
   badgeKey?: 'pendingDecisions';
-  icon: 'home' | 'clock' | 'check' | 'plus' | 'plug' | 'studio' | 'grid' | 'people' | 'chart' | 'signal';
+  icon: 'home' | 'clock' | 'check' | 'plus' | 'plug' | 'studio' | 'grid' | 'people' | 'chart' | 'signal' | 'tasks';
 }
 
 export interface Area {
@@ -22,6 +22,7 @@ export const AREAS: Area[] = [
       { to: '/', label: 'Command Center', end: true, icon: 'home' },
       { to: '/operate/runs', label: 'Runs & Actions', icon: 'clock', badgeKey: 'pendingDecisions' },
       { to: '/operate/decisions', label: 'Decision Ledger', icon: 'check' },
+      { to: '/operate/tasks', label: 'Tasks', icon: 'tasks' },
     ],
   },
   {

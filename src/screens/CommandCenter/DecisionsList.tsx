@@ -3,7 +3,7 @@ import { usePendingDecisions } from '../../api/dashboard';
 import { useApproveDecision } from '../../api/decisions';
 import { useToast } from '../../components/shared/Toast';
 import { Loading, ErrorMessage } from '../../components/shared/StateMessage';
-import type { PendingDecision } from '../../api/types';
+import type { PendingDecision, Persona } from '../../api/types';
 
 const actionLabelDefaults: Record<PendingDecision['actionVerb'], string> = {
   approve: 'Approve',
@@ -12,8 +12,8 @@ const actionLabelDefaults: Record<PendingDecision['actionVerb'], string> = {
   release: 'Release',
 };
 
-export function DecisionsList() {
-  const { data, isLoading, isError } = usePendingDecisions();
+export function DecisionsList({ persona }: { persona?: Persona | 'all' }) {
+  const { data, isLoading, isError } = usePendingDecisions(persona);
   const approve = useApproveDecision();
   const { showToast } = useToast();
 

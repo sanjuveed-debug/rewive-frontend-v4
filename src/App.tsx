@@ -13,6 +13,10 @@ import { AgentSpaceScreen } from './screens/AgentSpace';
 import { AgentDetailScreen } from './screens/AgentSpace/Detail';
 import { AgentStudioScreen } from './screens/AgentStudio';
 import { SignalStudioScreen } from './screens/SignalStudio';
+import { SignalDetailScreen } from './screens/SignalDetail';
+import { SolutionDesignScreen } from './screens/SolutionDesign';
+import { UnifiedAgentStudioScreen } from './screens/UnifiedAgentStudio';
+import { TasksScreen } from './screens/Tasks';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,12 +36,15 @@ function App() {
 
               <Route path="operate/runs" element={<RunsScreen />} />
               <Route path="operate/decisions" element={<DecisionsScreen />} />
+              <Route path="operate/tasks" element={<TasksScreen />} />
 
               <Route path="build" element={<Navigate to="/build/connectors" replace />} />
               <Route path="build/create" element={<CreateAgentScreen />} />
               <Route path="build/connectors" element={<ConnectorsScreen />} />
               <Route path="build/studio" element={<AgentStudioScreen />} />
               <Route path="build/studio/:workflowId" element={<AgentStudioScreen />} />
+              <Route path="build/solutions/:solutionId" element={<SolutionDesignScreen />} />
+              <Route path="build/agent-studio/:agentSpecId" element={<UnifiedAgentStudioScreen />} />
 
               <Route path="insights" element={<Navigate to="/insights/agents" replace />} />
               <Route path="insights/agents" element={<AgentSpaceScreen />} />
@@ -46,7 +53,7 @@ function App() {
               <Route path="insights/outcomes" element={<Navigate to="/insights/outcomes/latest" replace />} />
               <Route path="insights/outcomes/:runId" element={<OutcomesScreen />} />
               <Route path="insights/signals" element={<SignalStudioScreen />} />
-              <Route path="insights/signals/:signalId" element={<SignalStudioScreen />} />
+              <Route path="insights/signals/:signalId" element={<SignalDetailScreen />} />
 
               {/* v1 URL redirects, kept working for old bookmarks/links */}
               <Route path="runs" element={<Navigate to="/operate/runs" replace />} />

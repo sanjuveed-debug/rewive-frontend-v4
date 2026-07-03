@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import {
+  currentUser,
+  personaKpiOverrides,
   dashboardSummary,
   pendingDecisions,
   pulse,
@@ -22,6 +24,7 @@ import {
   generatePromptFromInstructions,
   getOutputPreview,
   suggestedSignals,
+  signalDetails,
   reviewCommittee,
   kpiTickets,
   peopleDirectory,
@@ -41,12 +44,34 @@ const agentSessions = new Map();
 const createdAgents = new Map();
 const outcomeReportsState = JSON.parse(JSON.stringify(outcomeReports));
 
+// ---------- Current user ----------
+app.get('/api/v1/me', (req, res) => res.json(currentUser));
+
 // ---------- Dashboard / Command Center ----------
+function filterByPersona(items, persona) {
+  return !persona || persona === 'all' ? items : items.filter((d) => d.persona === persona);
+}
+
 app.get('/api/v1/dashboard/summary', (req, res) => {
-  res.json({ ...dashboardSummary, kpis: { ...dashboardSummary.kpis, decisionsPending: { ...dashboardSummary.kpis.decisionsPending, value: pendingDecisionsState.length } } });
+  const { persona } = req.query;
+  const decisionsForPersona = filterByPersona(pendingDecisionsState, persona);
+  const overrides = persona && persona !== 'all' ? personaKpiOverrides[persona] : undefined;
+  res.json({
+    ...dashboardSummary,
+    kpis: {
+      ...dashboardSummary.kpis,
+      ...overrides,
+      decisionsPending: {
+        value: decisionsForPersona.length,
+        delta: persona && persona !== 'all'
+          ? { label: 'in your queue', direction: 'flat' }
+          : dashboardSummary.kpis.decisionsPending.delta,
+      },
+    },
+  });
 });
 
-app.get('/api/v1/decisions/pending', (req, res) => res.json(pendingDecisionsState));
+app.get('/api/v1/decisions/pending', (req, res) => res.json(filterByPersona(pendingDecisionsState, req.query.persona)));
 
 app.post('/api/v1/decisions/:id/approve', (req, res) => {
   const { id } = req.params;
@@ -383,6 +408,12 @@ app.get('/api/v1/signals/suggested', (req, res) => {
   res.json(result);
 });
 
+app.get('/api/v1/signals/:id/detail', (req, res) => {
+  const detail = signalDetails[req.params.id];
+  if (!detail) return res.status(404).json({ message: 'No detail available for this signal' });
+  res.json(detail);
+});
+
 app.get('/api/v1/signals/committee', (req, res) => res.json(reviewCommittee));
 
 app.post('/api/v1/signals/:id/submit-for-review', (req, res) => {
@@ -452,6 +483,305 @@ app.post('/api/v1/kpi-tickets/:id/comments', (req, res) => {
   ticket.comments = [...ticket.comments, comment];
   ticket.updatedAt = new Date().toISOString();
   res.json(ticket);
+});
+
+// ---------- Solution design ----------
+const solutionDesigns = new Map();
+const agentSpecs = new Map();
+
+function makeDefaultTaskList(solutionId, signalName) {
+  return [
+    { id: `${solutionId}-t1`, type: 'new_agent', title: `${signalName.split(' - ')[0].split(' erosion')[0]} response agent`, owner: 'Platform team', status: 'proposed', channel: 'app', comments: [] },
+    { id: `${solutionId}-t2`, type: 'existing_agent', title: 'Notification agent', owner: 'Reused, no change needed', status: 'confirmed', channel: 'app', comments: [] },
+    { id: `${solutionId}-t3`, type: 'human_task', title: 'Confirm the proposed fix with the business owner', owner: 'You', status: 'needs_review', channel: 'app', comments: [] },
+  ];
+}
+
+function findTask(taskId) {
+  for (const solution of solutionDesigns.values()) {
+    const task = solution.taskList.find((t) => t.id === taskId);
+    if (task) return { task, solution };
+  }
+  return null;
+}
+
+function runValidation(solution) {
+  const needsNewConnector = /new (data|connector|feed|source)/i.test(solution.dataNeeded);
+  return {
+    pros: [
+      'Directly targets the root cause behind this signal',
+      solution.copiedFromLabel ? `Already proven once - copied from ${solution.copiedFromLabel}` : 'Reuses at least one existing agent, limiting build effort',
+    ],
+    cons: needsNewConnector
+      ? ['Needs a new data connector before it can run in production']
+      : ['Still depends on manual follow-through by the task owners'],
+    expectedRoi: needsNewConnector ? '2.6x' : '3.8x',
+    expectedCost: needsNewConnector ? '$2,400' : '$1,400',
+    timeToValue: needsNewConnector ? '~5 weeks' : '~3 weeks',
+    recommendation: needsNewConnector ? 'dev_handoff' : 'ready_for_runs',
+    recommendationReason: needsNewConnector
+      ? 'This solution needs a new data connector - that is a technical build, best handed to dev or IT.'
+      : 'This is a process and task change against data already connected - no technical build needed.',
+  };
+}
+
+app.post('/api/v1/solutions', (req, res) => {
+  const { signalId } = req.body;
+  const signal = suggestedSignalsState.find((s) => s.id === signalId);
+  if (!signal) return res.status(404).json({ message: 'Signal not found' });
+  const id = `sol-${Date.now()}`;
+  const now = new Date().toISOString();
+  const solution = {
+    id,
+    signalId,
+    signalName: signal.name,
+    signalCategory: signal.category,
+    status: 'drafting',
+    approach: `Investigate the drivers behind "${signal.name}" and put a corrective plan in front of the business owner.`,
+    dataNeeded: signal.lineage.map((l) => l.fieldsUsed.join(', ')).join('; ') || 'existing connected data',
+    owner: { name: 'Kumara Vijayan', initials: 'KV', avatarBg: '#4F46E5' },
+    guardrails: 'Pause and ask before any change with a projected impact over $2,000.',
+    copiedFromLabel: null,
+    taskList: makeDefaultTaskList(id, signal.name),
+    validation: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  solutionDesigns.set(id, solution);
+  logAudit('signal', signalId, 'started a solution design');
+  res.json(solution);
+});
+
+app.get('/api/v1/solutions/:id', (req, res) => {
+  const solution = solutionDesigns.get(req.params.id);
+  if (!solution) return res.status(404).json({ message: 'Solution design not found' });
+  res.json(solution);
+});
+
+app.post('/api/v1/solutions/:id/copy', (req, res) => {
+  const solution = solutionDesigns.get(req.params.id);
+  if (!solution) return res.status(404).json({ message: 'Solution design not found' });
+  const detail = signalDetails[solution.signalId];
+  const match = detail?.similarSignals.find((s) => s.id === req.body.fromSimilarSignalId);
+  if (!match?.priorSolution) return res.status(404).json({ message: 'No prior solution to copy from that match' });
+  solution.approach = `${match.priorSolution.summary} Tweaked for this signal based on local conditions.`;
+  solution.dataNeeded = `${solution.dataNeeded}; a new data connector to reach the supplier rebate ledger used in that prior solution`;
+  solution.copiedFromLabel = match.label;
+  solution.validation = null;
+  solution.updatedAt = new Date().toISOString();
+  logAudit('signal', solution.signalId, `copied a prior solution into the design (${match.label})`);
+  res.json(solution);
+});
+
+app.post('/api/v1/solutions/:id/run-validation', (req, res) => {
+  const solution = solutionDesigns.get(req.params.id);
+  if (!solution) return res.status(404).json({ message: 'Solution design not found' });
+  solution.validation = runValidation(solution);
+  solution.updatedAt = new Date().toISOString();
+  res.json(solution);
+});
+
+app.post('/api/v1/solutions/:id/send-for-approval', (req, res) => {
+  const solution = solutionDesigns.get(req.params.id);
+  if (!solution) return res.status(404).json({ message: 'Solution design not found' });
+  if (!solution.validation) return res.status(400).json({ message: 'Run validation before sending for approval' });
+  solution.status = 'pending_approval';
+  solution.updatedAt = new Date().toISOString();
+  logAudit('signal', solution.signalId, 'sent solution design for approval');
+  res.json(solution);
+});
+
+app.post('/api/v1/solutions/:id/approve', (req, res) => {
+  const solution = solutionDesigns.get(req.params.id);
+  if (!solution) return res.status(404).json({ message: 'Solution design not found' });
+  solution.status = 'approved';
+  solution.updatedAt = new Date().toISOString();
+  logAudit('signal', solution.signalId, 'approved solution design');
+  res.json(solution);
+});
+
+// ---------- Tasks (assigned across all solution designs) ----------
+app.get('/api/v1/tasks', (req, res) => {
+  const { status } = req.query;
+  const all = [];
+  for (const solution of solutionDesigns.values()) {
+    for (const task of solution.taskList) {
+      all.push({ ...task, solutionId: solution.id, solutionName: solution.signalName });
+    }
+  }
+  res.json(status && status !== 'all' ? all.filter((t) => t.status === status) : all);
+});
+
+app.post('/api/v1/tasks/:taskId/feedback', (req, res) => {
+  const found = findTask(req.params.taskId);
+  if (!found) return res.status(404).json({ message: 'Task not found' });
+  const comment = { id: `tc-${Date.now()}`, authorName: currentUser.name, text: req.body.text, createdAt: new Date().toISOString() };
+  found.task.comments = [...found.task.comments, comment];
+  found.solution.updatedAt = new Date().toISOString();
+  res.json({ ...found.task, solutionId: found.solution.id, solutionName: found.solution.signalName });
+});
+
+app.patch('/api/v1/tasks/:taskId/status', (req, res) => {
+  const found = findTask(req.params.taskId);
+  if (!found) return res.status(404).json({ message: 'Task not found' });
+  found.task.status = req.body.status;
+  found.solution.updatedAt = new Date().toISOString();
+  res.json({ ...found.task, solutionId: found.solution.id, solutionName: found.solution.signalName });
+});
+
+app.patch('/api/v1/tasks/:taskId/channel', (req, res) => {
+  const found = findTask(req.params.taskId);
+  if (!found) return res.status(404).json({ message: 'Task not found' });
+  found.task.channel = req.body.channel;
+  res.json({ ...found.task, solutionId: found.solution.id, solutionName: found.solution.signalName });
+});
+
+// ---------- Unified Agent Studio (one spec, two altitudes) ----------
+function pushVersion(spec, summary, altitude) {
+  spec.version += 1;
+  spec.versionTrail = [{ version: spec.version, summary, actorName: currentUser.name, altitude, timestamp: new Date().toISOString() }, ...spec.versionTrail];
+}
+
+app.post('/api/v1/agent-specs', (req, res) => {
+  const { solutionId, taskId } = req.body;
+  const solution = solutionDesigns.get(solutionId);
+  const task = solution?.taskList.find((t) => t.id === taskId);
+  if (!solution || !task) return res.status(404).json({ message: 'Solution or task not found' });
+  const existing = [...agentSpecs.values()].find((s) => s.taskId === taskId);
+  if (existing) return res.json(existing);
+
+  const id = `agt-${Date.now()}`;
+  const spec = {
+    id,
+    name: task.title,
+    persona: 'operations_head',
+    solutionDesignId: solutionId,
+    taskId,
+    status: 'drafting',
+    needsTechnicalWork: solution.validation?.recommendation === 'dev_handoff',
+    owner: solution.owner,
+    version: 1,
+    versionTrail: [{ version: 1, summary: 'Drafted from the approved solution design', actorName: currentUser.name, altitude: 'business', timestamp: new Date().toISOString() }],
+    intent: solution.approach,
+    capabilities: [
+      { id: 'c1', label: 'Watch the signal daily', selected: true },
+      { id: 'c2', label: 'Draft a fix for review', selected: true },
+      { id: 'c3', label: 'Notify the task owner', selected: true },
+      { id: 'c4', label: 'Auto-apply within guardrails', selected: false },
+    ],
+    planPreview: [`Watch for "${solution.signalName}" recurring`, 'Draft a fix and route it for review', 'Notify the owner once resolved'],
+    dataContract: solution.dataNeeded.split(';').map((s) => s.trim()).filter(Boolean),
+    permissions: ['Read: source data feed', 'Write: task queue', 'Notify: task owners'],
+    guardrails: solution.guardrails,
+    testRunResult: null,
+    escalation: null,
+    handback: null,
+  };
+  agentSpecs.set(id, spec);
+  task.agentSpecId = id;
+  res.json(spec);
+});
+
+app.get('/api/v1/agent-specs/:id', (req, res) => {
+  const spec = agentSpecs.get(req.params.id);
+  if (!spec) return res.status(404).json({ message: 'Agent spec not found' });
+  res.json(spec);
+});
+
+app.patch('/api/v1/agent-specs/:id/business', (req, res) => {
+  const spec = agentSpecs.get(req.params.id);
+  if (!spec) return res.status(404).json({ message: 'Agent spec not found' });
+  const { intent, capabilities } = req.body;
+  if (intent !== undefined) spec.intent = intent;
+  if (capabilities !== undefined) spec.capabilities = capabilities;
+  pushVersion(spec, 'Updated the business plan', 'business');
+  res.json(spec);
+});
+
+app.patch('/api/v1/agent-specs/:id/developer', (req, res) => {
+  const spec = agentSpecs.get(req.params.id);
+  if (!spec) return res.status(404).json({ message: 'Agent spec not found' });
+  const { dataContract, permissions, guardrails } = req.body;
+  if (dataContract !== undefined) spec.dataContract = dataContract;
+  if (permissions !== undefined) spec.permissions = permissions;
+  if (guardrails !== undefined) spec.guardrails = guardrails;
+  pushVersion(spec, 'Updated the technical specification', 'developer');
+  res.json(spec);
+});
+
+app.post('/api/v1/agent-specs/:id/escalate', (req, res) => {
+  const spec = agentSpecs.get(req.params.id);
+  if (!spec) return res.status(404).json({ message: 'Agent spec not found' });
+  spec.status = 'escalated';
+  spec.escalation = {
+    kind: 'escalate',
+    fromName: spec.owner.name,
+    fromRole: 'business owner',
+    toLabel: 'Dev / IT, Aisha Rahman',
+    note: req.body.note || 'Plain language ran out here — needs a developer to finish the technical setup.',
+    createdAt: new Date().toISOString(),
+  };
+  pushVersion(spec, 'Escalated to developer', 'business');
+  res.json(spec);
+});
+
+app.post('/api/v1/agent-specs/:id/test-run', (req, res) => {
+  const spec = agentSpecs.get(req.params.id);
+  if (!spec) return res.status(404).json({ message: 'Agent spec not found' });
+  spec.testRunResult = `Ran against fixture data — ${spec.capabilities.filter((c) => c.selected).length} capabilities exercised, no guardrail breaches, sample output matched expectations.`;
+  pushVersion(spec, 'Test run against fixture data', 'developer');
+  res.json(spec);
+});
+
+app.post('/api/v1/agent-specs/:id/handback', (req, res) => {
+  const spec = agentSpecs.get(req.params.id);
+  if (!spec) return res.status(404).json({ message: 'Agent spec not found' });
+  spec.status = 'ready_to_publish';
+  spec.handback = {
+    kind: 'handback',
+    fromName: 'Aisha Rahman',
+    fromRole: 'dev / IT',
+    toLabel: spec.owner.name,
+    note: 'Technical setup is done and ready to publish.',
+    createdAt: new Date().toISOString(),
+    contract: {
+      does: spec.planPreview.join('; '),
+      wont: 'Act outside the guardrails below without asking first.',
+      owner: spec.owner.name,
+      whenUnsure: 'Pauses and asks the business owner directly.',
+    },
+  };
+  pushVersion(spec, 'Handed back to business', 'developer');
+  res.json(spec);
+});
+
+app.post('/api/v1/agent-specs/:id/publish', (req, res) => {
+  const spec = agentSpecs.get(req.params.id);
+  if (!spec) return res.status(404).json({ message: 'Agent spec not found' });
+  spec.status = 'published';
+  const agentId = `agent-${spec.id}`;
+  const preview = {
+    agentId, state: 'live', name: spec.name, function: 'Signal response',
+    capabilitiesCount: spec.capabilities.filter((c) => c.selected).length,
+    dataInputs: spec.dataContract.join(', ') || 'existing connected data',
+    reviewGate: spec.needsTechnicalWork ? 'Human approval before publish' : 'Human review as needed',
+    owner: spec.owner, guardrails: spec.guardrails, estRuntime: '2–4 min',
+  };
+  const catalogMeta = {
+    description: spec.intent,
+    industry: 'general', function2: 'it', persona: spec.persona, catalogStatus: 'live', creationPath: 'studio',
+    inputsSummary: spec.dataContract, outputsSummary: spec.planPreview,
+    roiToDate: { label: 'Measured impact', value: '—', direction: 'flat' },
+    tokenCostToDate: { tokens: 0, estCost: '$0.00' },
+    runsCount: 0, lastRunAt: null,
+  };
+  createdAgents.set(agentId, { sessionId: null, preview, catalogMeta });
+  spec.linkedAgentId = agentId;
+  pushVersion(spec, 'Published — now live in Agent Space', spec.needsTechnicalWork ? 'developer' : 'business');
+
+  const found = findTask(spec.taskId);
+  if (found) found.task.status = 'done';
+  res.json(spec);
 });
 
 // ---------- Shared: people directory & audit log ----------

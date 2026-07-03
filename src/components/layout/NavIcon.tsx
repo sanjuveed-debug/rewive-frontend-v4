@@ -87,6 +87,13 @@ export function NavIcon({ icon }: { icon: AreaNavItem['icon'] }) {
           <path d="M4 18v-3M9 18V9M14 18v-7M19 18V5" />
         </svg>
       );
+    case 'tasks':
+      return (
+        <svg {...common}>
+          <rect x="4" y="4" width="16" height="16" rx="2.5" />
+          <path d="M8 12l2.5 2.5L16 9" />
+        </svg>
+      );
     default:
       return null;
   }

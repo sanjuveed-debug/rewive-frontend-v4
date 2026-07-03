@@ -17,6 +17,17 @@ export interface DashboardSummary {
   };
 }
 
+export type Persona = 'store_manager' | 'cfo' | 'operations_head';
+
+export interface CurrentUser {
+  name: string;
+  initials: string;
+  avatarBg: string;
+  role: string;
+  isAdmin: boolean;
+  defaultPersona: Persona;
+}
+
 export interface PendingDecision {
   id: string;
   icon: string;
@@ -25,6 +36,7 @@ export interface PendingDecision {
   subtitle: string;
   actionLabel: string;
   actionVerb: 'approve' | 'act' | 'clear' | 'release';
+  persona: Persona;
 }
 
 export interface PulseItem {
@@ -288,6 +300,7 @@ export interface AgentCatalogEntry extends AgentPreview {
   description: string;
   industry: AgentIndustry;
   function2: AgentFunction;
+  persona: Persona;
   catalogStatus: AgentCatalogStatus;
   creationPath: AgentCreationPath;
   workflowId?: string;
@@ -483,4 +496,152 @@ export interface AuditLogEntry {
   action: string;
   actorName: string;
   timestamp: string;
+}
+
+// ---------- Signal detail (drill-down) ----------
+export interface SignalDatasetRow {
+  date: string;
+  label: string;
+  maskedField: string;
+  variance: string;
+}
+
+export interface PriorSolutionOutcome {
+  summary: string;
+  verdict: Verdict;
+  cost: string;
+  valueGenerated: string;
+  timeline: { label: string; date: string }[];
+}
+
+export interface SimilarSignalMatch {
+  id: string;
+  label: string;
+  scope: 'same_group' | 'restricted';
+  priorSolution?: PriorSolutionOutcome;
+}
+
+export interface SignalPrognosis {
+  impactRange: string;
+  confidence: 'low' | 'medium' | 'high';
+  trend: 'up' | 'down' | 'flat';
+  timeframe: string;
+}
+
+export interface SignalDetail {
+  signalId: string;
+  whySurfaced: string;
+  prognosis: SignalPrognosis;
+  datasetRows: SignalDatasetRow[];
+  piiMasked: boolean;
+  similarSignals: SimilarSignalMatch[];
+}
+
+// ---------- Solution design ----------
+export type SolutionTaskType = 'new_agent' | 'existing_agent' | 'human_task';
+export type SolutionTaskStatus = 'proposed' | 'needs_review' | 'confirmed' | 'in_progress' | 'done';
+export type TaskChannel = 'app' | 'teams' | 'slack' | 'servicenow';
+
+export interface TaskComment {
+  id: string;
+  authorName: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface SolutionTask {
+  id: string;
+  type: SolutionTaskType;
+  title: string;
+  owner: string;
+  status: SolutionTaskStatus;
+  channel: TaskChannel;
+  comments: TaskComment[];
+  agentSpecId?: string;
+  // populated only when returned from the aggregate /tasks endpoint
+  solutionId?: string;
+  solutionName?: string;
+}
+
+export interface ValidationReview {
+  pros: string[];
+  cons: string[];
+  expectedRoi: string;
+  expectedCost: string;
+  timeToValue: string;
+  recommendation: 'dev_handoff' | 'ready_for_runs';
+  recommendationReason: string;
+}
+
+export interface HandoffCardData {
+  kind: 'escalate' | 'handback';
+  fromName: string;
+  fromRole: string;
+  toLabel: string;
+  note: string;
+  createdAt: string;
+  contract?: { does: string; wont: string; owner: string; whenUnsure: string };
+}
+
+export type SolutionDesignStatus = 'drafting' | 'pending_approval' | 'approved';
+
+export interface SolutionDesign {
+  id: string;
+  signalId: string;
+  signalName: string;
+  signalCategory: SignalCategory;
+  status: SolutionDesignStatus;
+  approach: string;
+  dataNeeded: string;
+  owner: { name: string; initials: string; avatarBg: string };
+  guardrails: string;
+  copiedFromLabel: string | null;
+  taskList: SolutionTask[];
+  validation: ValidationReview | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------- Unified Agent Studio (one spec, two altitudes) ----------
+export type AgentAltitude = 'business' | 'developer';
+export type AgentSpecStatus = 'drafting' | 'escalated' | 'ready_to_publish' | 'published';
+
+export interface AgentSpecVersionEntry {
+  version: number;
+  summary: string;
+  actorName: string;
+  altitude: AgentAltitude;
+  timestamp: string;
+}
+
+export interface AgentSpecCapability {
+  id: string;
+  label: string;
+  selected: boolean;
+}
+
+export interface AgentSpec {
+  id: string;
+  name: string;
+  persona: Persona;
+  solutionDesignId: string;
+  taskId: string;
+  status: AgentSpecStatus;
+  needsTechnicalWork: boolean;
+  owner: { name: string; initials: string; avatarBg: string };
+  version: number;
+  versionTrail: AgentSpecVersionEntry[];
+  // business altitude
+  intent: string;
+  capabilities: AgentSpecCapability[];
+  planPreview: string[];
+  // developer altitude
+  dataContract: string[];
+  permissions: string[];
+  guardrails: string;
+  testRunResult: string | null;
+  // handoff
+  escalation: HandoffCardData | null;
+  handback: HandoffCardData | null;
+  linkedAgentId?: string;
 }

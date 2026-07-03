@@ -1,5 +1,35 @@
 // Seed data mirroring the original static prototype, used by the mock API server.
 
+export const currentUser = {
+  name: 'Kumara Vijayan',
+  initials: 'KV',
+  avatarBg: '#4F46E5',
+  role: 'Co-founder · Admin',
+  isAdmin: true,
+  defaultPersona: 'operations_head',
+};
+
+export const personaKpiOverrides = {
+  store_manager: {
+    actionsExecutedToday: { value: 22, delta: { label: '▲ 4 vs yesterday', direction: 'up' } },
+    agentsActiveNow: { value: 3, delta: { label: '1 running', direction: 'flat' } },
+    timeSavedThisWeek: { value: '9h', delta: { label: '▲ 2h vs last week', direction: 'up' } },
+    onTimeExecution: { value: '91%', delta: { label: '▼ 1 pt', direction: 'down' } },
+  },
+  cfo: {
+    actionsExecutedToday: { value: 34, delta: { label: '▲ 6% vs yesterday', direction: 'up' } },
+    agentsActiveNow: { value: 5, delta: { label: '2 running', direction: 'flat' } },
+    timeSavedThisWeek: { value: '18h', delta: { label: '▲ 3h vs last week', direction: 'up' } },
+    onTimeExecution: { value: '96%', delta: { label: '▲ 1 pt', direction: 'up' } },
+  },
+  operations_head: {
+    actionsExecutedToday: { value: 31, delta: { label: '▲ 8% vs yesterday', direction: 'up' } },
+    agentsActiveNow: { value: 4, delta: { label: '2 running', direction: 'flat' } },
+    timeSavedThisWeek: { value: '14h', delta: { label: '▲ 4h vs last week', direction: 'up' } },
+    onTimeExecution: { value: '93%', delta: { label: '▲ 1 pt', direction: 'up' } },
+  },
+};
+
 export const dashboardSummary = {
   greetingName: 'Kumara',
   summarySentence:
@@ -22,6 +52,7 @@ export let pendingDecisions = [
     subtitle: 'Profitability Agent · needs approval before it reaches the board pack',
     actionLabel: 'Approve',
     actionVerb: 'approve',
+    persona: 'cfo',
   },
   {
     id: 'dec2',
@@ -31,6 +62,7 @@ export let pendingDecisions = [
     subtitle: 'Anomaly Agent recommends repricing · est. impact +$84k / qtr',
     actionLabel: 'Act',
     actionVerb: 'act',
+    persona: 'store_manager',
   },
   {
     id: 'dec3',
@@ -40,6 +72,7 @@ export let pendingDecisions = [
     subtitle: 'Close Agent paused at review gate · waiting 3h 12m',
     actionLabel: 'Clear',
     actionVerb: 'clear',
+    persona: 'cfo',
   },
   {
     id: 'dec4',
@@ -49,6 +82,17 @@ export let pendingDecisions = [
     subtitle: 'Screening Agent · confidence 92% · Devaki tagged as reviewer',
     actionLabel: 'Release',
     actionVerb: 'release',
+    persona: 'operations_head',
+  },
+  {
+    id: 'dec5',
+    icon: '🚚',
+    iconBg: 'var(--amber-soft)',
+    title: 'Vendor invoice cost drainer · consolidation ready for sign-off',
+    subtitle: 'Signal Studio · 3 overlapping logistics vendors identified',
+    actionLabel: 'Review',
+    actionVerb: 'act',
+    persona: 'operations_head',
   },
 ];
 
@@ -336,7 +380,7 @@ export const agentCatalog = [
     capabilitiesCount: 4, dataInputs: 'P&L · Pricing · Customers', reviewGate: 'Human approval · step 4',
     owner: { name: 'Praveen J.', initials: 'PJ', avatarBg: '#D97706' }, guardrails: 'Finance pack · PII off', estRuntime: '7–9 min',
     description: 'Analyses P&L and pricing data to find where margin is leaking, ranked by driver.',
-    industry: 'financial_services', function2: 'finance', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'financial_services', function2: 'finance', persona: 'cfo', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['P&L data', 'Pricing data', 'Customer mapping'], outputsSummary: ['Outcome scorecard', 'Recommended actions'],
     roiToDate: { label: 'Measured impact', value: '+$389k', direction: 'up' }, tokenCostToDate: { tokens: 412000, estCost: '$38.20' },
     runsCount: 124, lastRunAt: '2h ago',
@@ -346,7 +390,7 @@ export const agentCatalog = [
     capabilitiesCount: 3, dataInputs: 'Cash-flow · Pipeline', reviewGate: 'Human approval before publish',
     owner: { name: 'Ganesh', initials: 'GR', avatarBg: '#4F46E5' }, guardrails: 'Finance pack', estRuntime: '5–8 min',
     description: 'Builds cash-flow and demand forecasts across scenarios.',
-    industry: 'financial_services', function2: 'finance', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'financial_services', function2: 'finance', persona: 'cfo', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['Cash-flow data', 'Pipeline data'], outputsSummary: ['Forecast scenarios'],
     roiToDate: { label: 'Time saved', value: '29h', direction: 'up' }, tokenCostToDate: { tokens: 198000, estCost: '$19.40' },
     runsCount: 58, lastRunAt: '6h ago',
@@ -356,7 +400,7 @@ export const agentCatalog = [
     capabilitiesCount: 2, dataInputs: 'Resumes · Job requisitions', reviewGate: 'Human review before release',
     owner: { name: 'Devaki', initials: 'DH', avatarBg: '#0D9488' }, guardrails: 'HR pack · PII on, masked', estRuntime: '3–5 min',
     description: 'Shortlists and ranks candidates against job requisitions.',
-    industry: 'general', function2: 'hr', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'general', function2: 'hr', persona: 'operations_head', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['Resumes', 'Job requisitions'], outputsSummary: ['Ranked shortlist'],
     roiToDate: { label: 'Time saved', value: '14h', direction: 'up' }, tokenCostToDate: { tokens: 76000, estCost: '$7.10' },
     runsCount: 31, lastRunAt: '1d ago',
@@ -366,7 +410,7 @@ export const agentCatalog = [
     capabilitiesCount: 3, dataInputs: 'Supplier invoices · Recipe BOMs', reviewGate: 'Human approval before menu repricing',
     owner: { name: 'Sanju Mathew', initials: 'SJ', avatarBg: '#0D9488' }, guardrails: 'F&B pack', estRuntime: '4–6 min',
     description: 'Tracks ingredient cost drift against recipe bills-of-material and flags menu items losing margin.',
-    industry: 'fnb', function2: 'finance', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'fnb', function2: 'finance', persona: 'store_manager', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['Supplier invoices', 'Recipe BOMs'], outputsSummary: ['Menu margin report', 'Repricing recommendations'],
     roiToDate: { label: 'Measured impact', value: '+$62k', direction: 'up' }, tokenCostToDate: { tokens: 94000, estCost: '$8.70' },
     runsCount: 47, lastRunAt: '5h ago',
@@ -376,7 +420,7 @@ export const agentCatalog = [
     capabilitiesCount: 2, dataInputs: 'POS data · Inventory counts', reviewGate: 'None — autonomous',
     owner: { name: 'Devaki Habib', initials: 'DH', avatarBg: '#0D9488' }, guardrails: 'F&B pack', estRuntime: '2–3 min',
     description: 'Cross-references sales against inventory draw-down to estimate spoilage and waste by location.',
-    industry: 'fnb', function2: 'it', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'fnb', function2: 'it', persona: 'store_manager', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['POS data', 'Inventory counts'], outputsSummary: ['Waste report by location'],
     roiToDate: { label: 'Measured impact', value: '+$21k', direction: 'up' }, tokenCostToDate: { tokens: 38000, estCost: '$3.50' },
     runsCount: 89, lastRunAt: '40m ago',
@@ -386,7 +430,7 @@ export const agentCatalog = [
     capabilitiesCount: 3, dataInputs: 'Appointment history · EHR scheduling feed', reviewGate: 'Human review before overbooking',
     owner: { name: 'Lena Farouk', initials: 'LF', avatarBg: '#0D9488' }, guardrails: 'Healthcare pack · PHI masked', estRuntime: '3–4 min',
     description: 'Predicts appointment no-show risk and recommends safe overbooking slots to protect clinician utilization.',
-    industry: 'healthcare', function2: 'customer_success', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'healthcare', function2: 'customer_success', persona: 'operations_head', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['Appointment history', 'EHR scheduling feed'], outputsSummary: ['Risk-scored schedule', 'Overbooking recommendations'],
     roiToDate: { label: 'Utilization gain', value: '+11%', direction: 'up' }, tokenCostToDate: { tokens: 121000, estCost: '$11.40' },
     runsCount: 63, lastRunAt: '3h ago',
@@ -396,7 +440,7 @@ export const agentCatalog = [
     capabilitiesCount: 4, dataInputs: 'Claims data · Payer rules', reviewGate: 'Human approval before resubmission',
     owner: { name: 'Anita Krishnan', initials: 'AK', avatarBg: '#D97706' }, guardrails: 'Healthcare pack · PHI masked', estRuntime: '5–7 min',
     description: 'Classifies denied claims by root cause and drafts resubmission packets for the highest-recovery cases first.',
-    industry: 'healthcare', function2: 'finance', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'healthcare', function2: 'finance', persona: 'cfo', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['Claims data', 'Payer rules'], outputsSummary: ['Denial root-cause report', 'Resubmission drafts'],
     roiToDate: { label: 'Recovered revenue', value: '+$145k', direction: 'up' }, tokenCostToDate: { tokens: 167000, estCost: '$15.60' },
     runsCount: 52, lastRunAt: '1d ago',
@@ -406,7 +450,7 @@ export const agentCatalog = [
     capabilitiesCount: 3, dataInputs: 'POS data · Stock counts · CCTV event logs', reviewGate: 'Human review before flags escalate',
     owner: { name: 'Ganesh Rajasekaran', initials: 'GR', avatarBg: '#4F46E5' }, guardrails: 'Retail pack', estRuntime: '4–5 min',
     description: 'Correlates point-of-sale, stock counts and event logs to flag stores with abnormal shrinkage patterns.',
-    industry: 'retail', function2: 'finance', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'retail', function2: 'finance', persona: 'store_manager', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['POS data', 'Stock counts', 'CCTV event logs'], outputsSummary: ['Store risk ranking', 'Investigation packets'],
     roiToDate: { label: 'Measured impact', value: '+$98k', direction: 'up' }, tokenCostToDate: { tokens: 142000, estCost: '$13.20' },
     runsCount: 36, lastRunAt: '8h ago',
@@ -416,7 +460,7 @@ export const agentCatalog = [
     capabilitiesCount: 3, dataInputs: 'Sales history · Planogram data', reviewGate: 'Human approval before planogram change',
     owner: { name: 'Sanju Mathew', initials: 'SJ', avatarBg: '#0D9488' }, guardrails: 'Retail pack', estRuntime: '6–8 min',
     description: 'Recommends shelf-space reallocation by store cluster based on sell-through and basket affinity.',
-    industry: 'retail', function2: 'sales', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'retail', function2: 'sales', persona: 'store_manager', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['Sales history', 'Planogram data'], outputsSummary: ['Planogram change recommendations'],
     roiToDate: { label: 'Measured impact', value: '+$54k', direction: 'up' }, tokenCostToDate: { tokens: 88000, estCost: '$8.10' },
     runsCount: 21, lastRunAt: '2d ago',
@@ -426,7 +470,7 @@ export const agentCatalog = [
     capabilitiesCount: 4, dataInputs: 'IoT sensor feed · Maintenance logs', reviewGate: 'Human approval before scheduling downtime',
     owner: { name: 'Praveen Jagadeesan', initials: 'PJ', avatarBg: '#D97706' }, guardrails: 'Manufacturing pack', estRuntime: '8–10 min',
     description: 'Scores equipment failure risk from sensor telemetry and proposes a maintenance schedule that minimizes downtime cost.',
-    industry: 'manufacturing', function2: 'it', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'manufacturing', function2: 'it', persona: 'operations_head', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['IoT sensor feed', 'Maintenance logs'], outputsSummary: ['Failure risk scores', 'Maintenance schedule'],
     roiToDate: { label: 'Downtime avoided', value: '+340h', direction: 'up' }, tokenCostToDate: { tokens: 205000, estCost: '$19.10' },
     runsCount: 44, lastRunAt: '6h ago',
@@ -436,7 +480,7 @@ export const agentCatalog = [
     capabilitiesCount: 2, dataInputs: 'Line camera feed · Defect taxonomy', reviewGate: 'Human review before line stop',
     owner: { name: 'Ganesh Rajasekaran', initials: 'GR', avatarBg: '#4F46E5' }, guardrails: 'Manufacturing pack', estRuntime: '1–2 min',
     description: 'Flags visual defects on the production line in real time against a configurable defect taxonomy.',
-    industry: 'manufacturing', function2: 'it', catalogStatus: 'paused', creationPath: 'chat',
+    industry: 'manufacturing', function2: 'it', persona: 'operations_head', catalogStatus: 'paused', creationPath: 'chat',
     inputsSummary: ['Line camera feed', 'Defect taxonomy'], outputsSummary: ['Defect alerts'],
     roiToDate: { label: 'Measured impact', value: '—', direction: 'flat' }, tokenCostToDate: { tokens: 12000, estCost: '$1.10' },
     runsCount: 6, lastRunAt: '9d ago',
@@ -446,7 +490,7 @@ export const agentCatalog = [
     capabilitiesCount: 3, dataInputs: 'Carrier tracking feed · SLA terms', reviewGate: 'None — autonomous',
     owner: { name: 'Devaki Habib', initials: 'DH', avatarBg: '#0D9488' }, guardrails: 'Logistics pack', estRuntime: '3–4 min',
     description: 'Watches in-transit shipments against carrier SLAs and auto-drafts exception claims for late or damaged freight.',
-    industry: 'logistics', function2: 'procurement', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'logistics', function2: 'procurement', persona: 'operations_head', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['Carrier tracking feed', 'SLA terms'], outputsSummary: ['Exception claims', 'SLA breach report'],
     roiToDate: { label: 'Measured impact', value: '+$37k', direction: 'up' }, tokenCostToDate: { tokens: 65000, estCost: '$6.00' },
     runsCount: 112, lastRunAt: '20m ago',
@@ -456,7 +500,7 @@ export const agentCatalog = [
     capabilitiesCount: 3, dataInputs: 'Delivery orders · Live traffic feed', reviewGate: 'Human approval for route changes mid-shift',
     owner: { name: 'Ganesh Rajasekaran', initials: 'GR', avatarBg: '#4F46E5' }, guardrails: 'Logistics pack', estRuntime: '2–3 min',
     description: 'Re-sequences last-mile delivery routes against live traffic to cut fuel cost and missed delivery windows.',
-    industry: 'logistics', function2: 'it', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'logistics', function2: 'it', persona: 'operations_head', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['Delivery orders', 'Live traffic feed'], outputsSummary: ['Optimized route plan'],
     roiToDate: { label: 'Fuel cost saved', value: '+$18k', direction: 'up' }, tokenCostToDate: { tokens: 51000, estCost: '$4.70' },
     runsCount: 201, lastRunAt: '5m ago',
@@ -466,7 +510,7 @@ export const agentCatalog = [
     capabilitiesCount: 3, dataInputs: 'Product usage telemetry · Support tickets', reviewGate: 'Human review before outreach',
     owner: { name: 'Lena Farouk', initials: 'LF', avatarBg: '#0D9488' }, guardrails: 'Technology pack', estRuntime: '4–5 min',
     description: 'Scores accounts by churn risk from usage decay and support sentiment, and drafts a save-play for CS to act on.',
-    industry: 'technology', function2: 'customer_success', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'technology', function2: 'customer_success', persona: 'cfo', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['Product usage telemetry', 'Support tickets'], outputsSummary: ['Risk-scored account list', 'Save-play drafts'],
     roiToDate: { label: 'Retained ARR', value: '+$210k', direction: 'up' }, tokenCostToDate: { tokens: 178000, estCost: '$16.50' },
     runsCount: 67, lastRunAt: '1h ago',
@@ -476,7 +520,7 @@ export const agentCatalog = [
     capabilitiesCount: 3, dataInputs: 'Vendor financials · News/sanctions feed', reviewGate: 'Human approval before vendor suspension',
     owner: { name: 'Praveen Jagadeesan', initials: 'PJ', avatarBg: '#D97706' }, guardrails: 'Finance pack', estRuntime: '5–6 min',
     description: 'Monitors vendor financial health and adverse news to flag supply-chain risk before it disrupts operations.',
-    industry: 'manufacturing', function2: 'procurement', catalogStatus: 'live', creationPath: 'chat',
+    industry: 'manufacturing', function2: 'procurement', persona: 'operations_head', catalogStatus: 'live', creationPath: 'chat',
     inputsSummary: ['Vendor financials', 'News/sanctions feed'], outputsSummary: ['Vendor risk ranking'],
     roiToDate: { label: 'Risk avoided', value: '3 flagged', direction: 'up' }, tokenCostToDate: { tokens: 71000, estCost: '$6.60' },
     runsCount: 28, lastRunAt: '11h ago',
@@ -486,7 +530,7 @@ export const agentCatalog = [
     capabilitiesCount: 2, dataInputs: 'Lease PDFs · Portfolio register', reviewGate: 'Human review before register update',
     owner: { name: 'Rohan Mehta', initials: 'RM', avatarBg: '#4F46E5' }, guardrails: 'Real estate pack', estRuntime: '6–9 min',
     description: 'Extracts key terms (rent escalation, break clauses, renewal dates) from lease PDFs into the portfolio register.',
-    industry: 'real_estate', function2: 'finance', catalogStatus: 'draft', creationPath: 'chat',
+    industry: 'real_estate', function2: 'finance', persona: 'cfo', catalogStatus: 'draft', creationPath: 'chat',
     inputsSummary: ['Lease PDFs', 'Portfolio register'], outputsSummary: ['Structured lease abstracts'],
     roiToDate: { label: 'Measured impact', value: '—', direction: 'flat' }, tokenCostToDate: { tokens: 4000, estCost: '$0.40' },
     runsCount: 2, lastRunAt: '3d ago',
@@ -553,6 +597,81 @@ export const suggestedSignals = [
   { id: 'sig5', name: 'DSO drift — KSA distributor', description: 'Days sales outstanding for the KSA distributor has drifted 12 days above target.', category: 'derailer', sourceConnectionIds: ['conn2'], computableNow: true, approvalStatus: 'suggested', lineage: [{ connectionId: 'conn2', fieldsUsed: ['dso', 'region'] }] },
 ];
 
+export const signalDetails = {
+  sig1: {
+    signalId: 'sig1',
+    whySurfaced: 'Margin on the SKU 4417 family has fallen 6.2% in KSA over the trailing quarter, crossing the derailer threshold for two consecutive months.',
+    prognosis: { impactRange: 'SAR 180,000 - 260,000', confidence: 'high', trend: 'down', timeframe: 'next quarter' },
+    piiMasked: true,
+    datasetRows: [
+      { date: '18 Jun', label: 'SKU 4417-A repricing', maskedField: 'E****42', variance: '-6.8%' },
+      { date: '11 Jun', label: 'SKU 4417-B repricing', maskedField: 'E****42', variance: '-5.9%' },
+      { date: '04 Jun', label: 'SKU 4417-A repricing', maskedField: 'E****19', variance: '-4.1%' },
+    ],
+    similarSignals: [
+      {
+        id: 'sim1', label: 'UAE, same SKU family - 3.4% erosion, resolved this spring', scope: 'same_group',
+        priorSolution: {
+          summary: 'Renegotiated the supplier rebate tier and repriced two slow movers.',
+          verdict: 'worked', cost: 'SAR 12,000', valueGenerated: 'SAR 96,000',
+          timeline: [
+            { label: 'Solution design started', date: '02 Apr' },
+            { label: 'Approved, handed to dev for the rebate connector', date: '05 Apr' },
+            { label: 'Repricing went live', date: '14 Apr' },
+            { label: 'Verdict: worked', date: '30 May' },
+          ],
+        },
+      },
+      { id: 'sim2', label: 'Affiliated group company, packaged foods division - same pattern', scope: 'restricted' },
+    ],
+  },
+  sig2: {
+    signalId: 'sig2',
+    whySurfaced: 'Forecasted support ticket volume has fallen below plan for three straight weeks, a leading indicator that current hiring plans may overshoot demand.',
+    prognosis: { impactRange: '$40,000 - $70,000', confidence: 'medium', trend: 'down', timeframe: 'next 2 quarters' },
+    piiMasked: true,
+    datasetRows: [
+      { date: '20 Jun', label: 'Weekly ticket volume, region 1', maskedField: 'M****07', variance: '-9.2%' },
+      { date: '13 Jun', label: 'Weekly ticket volume, region 1', maskedField: 'M****07', variance: '-7.5%' },
+    ],
+    similarSignals: [
+      { id: 'sim3', label: 'North America support org saw the same dip last year', scope: 'same_group', priorSolution: { summary: 'Paused one open req and redeployed to onboarding.', verdict: 'worked', cost: '$0', valueGenerated: '$52,000', timeline: [{ label: 'Solution design started', date: '11 Jan' }, { label: 'Approved, no dev needed', date: '12 Jan' }, { label: 'Verdict: worked', date: '20 Mar' }] } },
+    ],
+  },
+  sig3: {
+    signalId: 'sig3',
+    whySurfaced: 'Three logistics vendors show overlapping invoice line items for the same lanes, a consolidation candidate that is not yet computable end to end.',
+    prognosis: { impactRange: '$18,000 - $30,000', confidence: 'low', trend: 'flat', timeframe: 'ongoing' },
+    piiMasked: true,
+    datasetRows: [
+      { date: '15 Jun', label: 'Vendor invoice overlap, lane 4', maskedField: 'V****88', variance: '+2.1%' },
+    ],
+    similarSignals: [],
+  },
+  sig4: {
+    signalId: 'sig4',
+    whySurfaced: 'Channel discounts rose 3.1 points quarter over quarter but only drove 0.8 points of volume, a negative price-volume trade already approved for a KPI ticket.',
+    prognosis: { impactRange: '$95,000 - $140,000', confidence: 'high', trend: 'down', timeframe: 'this quarter' },
+    piiMasked: true,
+    datasetRows: [
+      { date: '01 Jun', label: 'Channel discount ladder, tier 2', maskedField: 'D****21', variance: '+3.1%' },
+    ],
+    similarSignals: [],
+  },
+  sig5: {
+    signalId: 'sig5',
+    whySurfaced: 'Days sales outstanding for the KSA distributor has drifted 12 days above target over 6 weeks, tracking with a change in invoice approval routing.',
+    prognosis: { impactRange: 'SAR 220,000 working capital', confidence: 'medium', trend: 'down', timeframe: 'next 6 weeks' },
+    piiMasked: true,
+    datasetRows: [
+      { date: '19 Jun', label: 'Invoice approval routing, KSA', maskedField: 'F****55', variance: '+12 days' },
+    ],
+    similarSignals: [
+      { id: 'sim4', label: 'Affiliated group company, same distributor network', scope: 'restricted' },
+    ],
+  },
+};
+
 export const reviewCommittee = [
   { userId: 'u-cfo', name: 'Anita Krishnan', initials: 'AK', avatarBg: '#D97706', title: 'CFO' },
   { userId: 'u-ceo', name: 'Rohan Mehta', initials: 'RM', avatarBg: '#4F46E5', title: 'CEO' },
@@ -580,6 +699,7 @@ export const peopleDirectory = [
   { userId: 'u-cfo', name: 'Anita Krishnan', initials: 'AK', avatarBg: '#D97706', roles: ['Committee', 'CFO'] },
   { userId: 'u-ceo', name: 'Rohan Mehta', initials: 'RM', avatarBg: '#4F46E5', roles: ['Committee', 'CEO'] },
   { userId: 'u-coo', name: 'Lena Farouk', initials: 'LF', avatarBg: '#0D9488', roles: ['Committee', 'COO'] },
+  { userId: 'u-aisha', name: 'Aisha Rahman', initials: 'AR', avatarBg: '#4F46E5', roles: ['Platform', 'Developer'] },
 ];
 
 // ---------- Audit log (shared) ----------
