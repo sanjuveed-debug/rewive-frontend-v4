@@ -29,6 +29,7 @@ import {
   kpiTickets,
   peopleDirectory,
   auditLog,
+  kpiCatalog,
 } from './data.js';
 
 const app = express();
@@ -268,6 +269,95 @@ app.get('/api/v1/connections/:id/signal-coverage', (req, res) => {
   if (!conn) return res.status(404).json({ message: 'Connection not found' });
   const calculableSignalIds = suggestedSignalsState.filter((s) => s.sourceConnectionIds.includes(conn.id)).map((s) => s.id);
   res.json({ connectionId: conn.id, connectionName: conn.name, calculableSignalIds });
+});
+
+// ---------- KPI Library (onboarding) ----------
+let trackedKpisState = [];
+
+app.get('/api/v1/kpi-catalog', (req, res) => {
+  const { segment } = req.query;
+  res.json(segment && segment !== 'all' ? kpiCatalog.filter((k) => k.segment === segment) : kpiCatalog);
+});
+
+app.get('/api/v1/tracked-kpis', (req, res) => res.json(trackedKpisState));
+
+app.post('/api/v1/tracked-kpis', (req, res) => {
+  const entry = kpiCatalog.find((k) => k.id === req.body.kpiId);
+  if (!entry) return res.status(404).json({ message: 'KPI not found in catalog' });
+  if (trackedKpisState.some((t) => t.id === entry.id)) return res.json(trackedKpisState.find((t) => t.id === entry.id));
+  const tracked = {
+    id: entry.id,
+    name: entry.name,
+    segment: entry.segment,
+    category: entry.category,
+    source: 'catalog',
+    driversNeeded: entry.driversNeeded,
+    dataStatus: 'needs_connection',
+    addedAt: new Date().toISOString(),
+  };
+  trackedKpisState = [...trackedKpisState, tracked];
+  logAudit('signal', entry.id, `started tracking KPI "${entry.name}"`);
+  res.json(tracked);
+});
+
+app.post('/api/v1/tracked-kpis/custom', (req, res) => {
+  const { name, drivers } = req.body;
+  const tracked = {
+    id: `kpi-custom-${Date.now()}`,
+    name,
+    segment: null,
+    category: null,
+    source: 'custom',
+    driversNeeded: drivers || [],
+    dataStatus: 'needs_connection',
+    addedAt: new Date().toISOString(),
+  };
+  trackedKpisState = [...trackedKpisState, tracked];
+  logAudit('signal', tracked.id, `added a custom KPI by drivers: "${name}"`);
+  res.json(tracked);
+});
+
+app.delete('/api/v1/tracked-kpis/:id', (req, res) => {
+  trackedKpisState = trackedKpisState.filter((t) => t.id !== req.params.id);
+  res.json({ ok: true });
+});
+
+app.post('/api/v1/connections/:id/import-planning-data', (req, res) => {
+  const conn = connectionsState.find((c) => c.id === req.params.id);
+  if (!conn) return res.status(404).json({ message: 'Connection not found' });
+  if (!['anaplan', 'adaptive_planning'].includes(conn.connectorTypeId)) {
+    return res.status(400).json({ message: 'This connection is not a planning tool connector' });
+  }
+  const driversImported = [
+    { name: 'Revenue — Volume', value: '128,400 units / month' },
+    { name: 'Revenue — Price', value: '$42.10 avg unit price' },
+    { name: 'COGS — Unit cost', value: '$18.65 / unit' },
+    { name: 'Opex — Headcount', value: '412 FTE' },
+  ];
+  const budgetLinesImported = [
+    { name: 'FY26 Revenue Budget', amount: '$42.0M' },
+    { name: 'FY26 Opex Budget', amount: '$18.5M' },
+    { name: 'FY26 Capex Budget', amount: '$3.2M' },
+  ];
+  const importedKpis = driversImported.map((d, i) => ({
+    id: `kpi-import-${conn.id}-${i}`,
+    name: d.name,
+    segment: null,
+    category: 'financial',
+    source: 'planning_import',
+    driversNeeded: [{ name: d.name, dataSource: conn.name }],
+    dataStatus: 'connected',
+    addedAt: new Date().toISOString(),
+  }));
+  trackedKpisState = [...trackedKpisState, ...importedKpis.filter((k) => !trackedKpisState.some((t) => t.id === k.id))];
+  logAudit('connection', conn.id, `imported drivers and budget from ${conn.name}`);
+  res.json({
+    connectionId: conn.id,
+    connectorName: conn.name,
+    driversImported,
+    budgetLinesImported,
+    importedAt: new Date().toISOString(),
+  });
 });
 
 // ---------- Agent Space ----------

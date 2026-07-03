@@ -30,6 +30,7 @@ export const AREAS: Area[] = [
     label: 'Build',
     basePath: '/build',
     items: [
+      { to: '/build/kpis', label: 'KPI Library', icon: 'chart' },
       { to: '/build/create', label: 'Create an Agent', icon: 'plus' },
       { to: '/build/connectors', label: 'Data Connectors', icon: 'plug' },
       { to: '/build/studio', label: 'Agent Studio', icon: 'studio' },

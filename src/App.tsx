@@ -17,6 +17,7 @@ import { SignalDetailScreen } from './screens/SignalDetail';
 import { SolutionDesignScreen } from './screens/SolutionDesign';
 import { UnifiedAgentStudioScreen } from './screens/UnifiedAgentStudio';
 import { TasksScreen } from './screens/Tasks';
+import { KpiLibraryScreen } from './screens/KpiLibrary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,7 +39,8 @@ function App() {
               <Route path="operate/decisions" element={<DecisionsScreen />} />
               <Route path="operate/tasks" element={<TasksScreen />} />
 
-              <Route path="build" element={<Navigate to="/build/connectors" replace />} />
+              <Route path="build" element={<Navigate to="/build/kpis" replace />} />
+              <Route path="build/kpis" element={<KpiLibraryScreen />} />
               <Route path="build/create" element={<CreateAgentScreen />} />
               <Route path="build/connectors" element={<ConnectorsScreen />} />
               <Route path="build/studio" element={<AgentStudioScreen />} />

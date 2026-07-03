@@ -229,7 +229,16 @@ export interface Paginated<T> {
 // ============ v2 ============
 
 // ---------- Data Connectors ----------
-export type ConnectorTypeKey = 'snowflake' | 'dynamics' | 'salesforce' | 'sftp' | 'onedrive' | 'sharepoint' | 'custom';
+export type ConnectorTypeKey =
+  | 'snowflake'
+  | 'dynamics'
+  | 'salesforce'
+  | 'sftp'
+  | 'onedrive'
+  | 'sharepoint'
+  | 'anaplan'
+  | 'adaptive_planning'
+  | 'custom';
 
 export interface ConnectorField {
   key: string;
@@ -644,4 +653,50 @@ export interface AgentSpec {
   escalation: HandoffCardData | null;
   handback: HandoffCardData | null;
   linkedAgentId?: string;
+}
+
+// ---------- KPI Library (onboarding: pick KPIs, or import drivers and budget) ----------
+export type KpiSegment = 'hospital' | 'clinic' | 'pharmacy';
+export type KpiCategory = 'financial' | 'operational' | 'clinical' | 'patient_experience';
+
+export interface KpiDriver {
+  name: string;
+  dataSource: string;
+}
+
+export interface KpiCatalogEntry {
+  id: string;
+  name: string;
+  segment: KpiSegment;
+  category: KpiCategory;
+  definition: string;
+  formula: string;
+  driversNeeded: KpiDriver[];
+}
+
+export type TrackedKpiSource = 'catalog' | 'custom' | 'planning_import';
+export type TrackedKpiDataStatus = 'connected' | 'needs_connection';
+
+export interface TrackedKpi {
+  id: string;
+  name: string;
+  segment: KpiSegment | null;
+  category: KpiCategory | null;
+  source: TrackedKpiSource;
+  driversNeeded: KpiDriver[];
+  dataStatus: TrackedKpiDataStatus;
+  addedAt: string;
+}
+
+export interface CustomKpiInput {
+  name: string;
+  drivers: KpiDriver[];
+}
+
+export interface PlanningImportResult {
+  connectionId: string;
+  connectorName: string;
+  driversImported: { name: string; value: string }[];
+  budgetLinesImported: { name: string; amount: string }[];
+  importedAt: string;
 }
