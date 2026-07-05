@@ -1017,4 +1017,50 @@ app.get('/api/v1/audit-log', (req, res) => {
   res.json(result);
 });
 
+// ---------- Full-state snapshot, for persistence on serverless (see mock-server/kv.js) ----------
+// Reaches into every mutable collection above rather than threading a store
+// through each route — keeps this additive instead of rewriting ~40 handlers.
+export function exportState() {
+  return {
+    pendingDecisionsState,
+    agentSessions: Object.fromEntries(agentSessions),
+    createdAgents: Object.fromEntries(createdAgents),
+    outcomeReportsState,
+    runExceptionsState,
+    runChasesState,
+    connectorTypesState,
+    connectionsState,
+    auditLogState,
+    trackedKpisState,
+    workflowsState: Object.fromEntries(workflowsState),
+    suggestedSignalsState,
+    kpiTicketsState,
+    solutionDesigns: Object.fromEntries(solutionDesigns),
+    agentSpecs: Object.fromEntries(agentSpecs),
+    quickSolutions: Object.fromEntries(quickSolutions),
+    signalDetails,
+  };
+}
+
+export function importState(snapshot) {
+  if (!snapshot) return;
+  if (snapshot.pendingDecisionsState) pendingDecisionsState = snapshot.pendingDecisionsState;
+  if (snapshot.agentSessions) { agentSessions.clear(); for (const [k, v] of Object.entries(snapshot.agentSessions)) agentSessions.set(k, v); }
+  if (snapshot.createdAgents) { createdAgents.clear(); for (const [k, v] of Object.entries(snapshot.createdAgents)) createdAgents.set(k, v); }
+  if (snapshot.outcomeReportsState) Object.assign(outcomeReportsState, snapshot.outcomeReportsState);
+  if (snapshot.runExceptionsState) runExceptionsState = snapshot.runExceptionsState;
+  if (snapshot.runChasesState) runChasesState = snapshot.runChasesState;
+  if (snapshot.connectorTypesState) connectorTypesState = snapshot.connectorTypesState;
+  if (snapshot.connectionsState) connectionsState = snapshot.connectionsState;
+  if (snapshot.auditLogState) auditLogState = snapshot.auditLogState;
+  if (snapshot.trackedKpisState) trackedKpisState = snapshot.trackedKpisState;
+  if (snapshot.workflowsState) { workflowsState.clear(); for (const [k, v] of Object.entries(snapshot.workflowsState)) workflowsState.set(k, v); }
+  if (snapshot.suggestedSignalsState) suggestedSignalsState = snapshot.suggestedSignalsState;
+  if (snapshot.kpiTicketsState) kpiTicketsState = snapshot.kpiTicketsState;
+  if (snapshot.solutionDesigns) { solutionDesigns.clear(); for (const [k, v] of Object.entries(snapshot.solutionDesigns)) solutionDesigns.set(k, v); }
+  if (snapshot.agentSpecs) { agentSpecs.clear(); for (const [k, v] of Object.entries(snapshot.agentSpecs)) agentSpecs.set(k, v); }
+  if (snapshot.quickSolutions) { quickSolutions.clear(); for (const [k, v] of Object.entries(snapshot.quickSolutions)) quickSolutions.set(k, v); }
+  if (snapshot.signalDetails) Object.assign(signalDetails, snapshot.signalDetails);
+}
+
 export default app;
