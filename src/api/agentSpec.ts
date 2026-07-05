@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
-import type { AgentSpec, AgentSpecCapability } from './types';
+import type { AgentDelegateIdentity, AgentSpec, AgentSpecCapability } from './types';
 
 export function useAgentSpec(id: string | undefined) {
   return useQuery({
@@ -35,6 +35,15 @@ export function useUpdateBusinessAltitude(id: string) {
   return useMutation({
     mutationFn: async (vars: { intent?: string; capabilities?: AgentSpecCapability[] }) =>
       (await apiClient.patch<AgentSpec>(`/agent-specs/${id}/business`, vars)).data,
+    onSuccess: (updated) => queryClient.setQueryData(['agent-specs', id], updated),
+  });
+}
+
+export function useUpdateDelegateIdentity(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: Partial<AgentDelegateIdentity>) =>
+      (await apiClient.patch<AgentSpec>(`/agent-specs/${id}/delegate`, vars)).data,
     onSuccess: (updated) => queryClient.setQueryData(['agent-specs', id], updated),
   });
 }

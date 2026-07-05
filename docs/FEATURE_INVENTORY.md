@@ -50,30 +50,31 @@ Rebuilt from the static HTML prototype so every data point comes from an API ins
 | Version trail — every business/dev edit, escalate, test run, handback, and publish logged with actor, altitude, timestamp | Unified Agent Studio |
 | Test run against fixture data | Unified Agent Studio, Developer altitude |
 | Publish — works for agents that never needed a developer (publish straight from Business altitude) and agents that did (publish after handback); creates a real, live entry in Agent Space either way | Unified Agent Studio → Agent Space |
-| **Tasks** (new) — every task from every approved solution in one place, with per-task feedback/comments and a status progression | `/operate/tasks` |
+| **Tasks** (new) — every task from every approved solution *and* confirmed quick solutions in one place, with per-task feedback/comments and a status progression | `/operate/tasks` |
 | Notification channel selector per task (In app / Teams / Slack / ServiceNow) | Tasks screen — **UI preview only, not wired to a real integration** |
 | Command Center persona lens — locked to the signed-in user's role for regular users, admin-switchable (Store Manager / CFO / Operations Head / All) | Command Center |
 | Persona-driven KPIs and pending-decisions filtering | Command Center |
+| **Command Center — "Signals waiting on you"** — persona-filtered signals right on the landing page, each with a one-click "Solution design" action; this was designed in the very first mockup but had never actually been added to the real screen until this round | Command Center |
 | Agents tagged with persona | Agent Space cards + Agent Detail page |
+| **Solution-in-hand fast path** — reviewer describes a fix in plain language, it's broken into tasks, nothing is created until they explicitly confirm, then it lands in Tasks under "Quick fix: <signal>" | Signal Detail → "I already have a solution" |
+| **PII unmask request** — logged request instead of a silent toggle; data stays masked, the request is what's tracked | Signal Detail |
+| **Restricted cross-group signal access request** — the "restricted" row now has a real "Request access" action instead of being inert | Signal Detail |
+| **Runs & Actions exception log** — open/resolved agent issues per run, with a Resolve action | Runs & Actions |
+| **Chase & escalate** — an SLA-based item (no response past the service window) and a form to flag feedback on any run, which escalates straight to the agent owner | Runs & Actions |
+| **Decision Ledger — assessor agent verdict and close-the-loop** — an independent post-run assessment note distinct from the validation agent (which reviewed the *plan*, not the outcome), with a link back to close the originating signal | Decision Ledger |
+| **Agent delegate identity** — name, tone, communication style, response type, an escalation-temperament slider, working hours, and "when it's unsure," editable per agent | Unified Agent Studio |
 
 ### Explicitly not built — still just discussed or mocked up
 
 | Feature | Note |
 |---|---|
-| Agent delegate configuration — tone, culture, communication style, response type, escalation temperament, working hours, "when it's unsure" | Not started |
-| Solution-in-hand fast path — reviewer already has a fix → task breakdown → confirm with the solution provider → assign & notify | Explicitly scoped out early on |
-| PII unmask-with-reason flow | Masked by default; no "request access" action exists |
-| Restricted cross-group-company signal access request | Shown as a greyed "restricted" pill with no action behind it |
 | UAT stage / separate manual production deploy gate | Publish in Unified Agent Studio goes straight to live — there's no distinct UAT or manual-deploy step in between |
-| Runs & Actions exception log | Not started |
-| Chase & escalate — SLA/timer-based (no response in N hours) and feedback-driven (user flags "too noisy") | Not started |
-| Assessor agent — independent post-run impact assessment feeding a verdict back into the Decision Ledger | Distinct from the validation agent, which reviews the *plan*, not the outcome |
-| Decision Ledger close-the-loop visual (verdict writing back to close the originating signal) | Not started |
 | Real Teams / Slack / ServiceNow integration behind the Tasks channel selector | Selector exists; no external delivery |
 | KPI catalog for industries beyond Healthcare (Retail, Manufacturing, Financial Services, etc.) | Only Hospital / Clinic / Pharmacy chain are researched and seeded so far — the segment picker is ready to take more |
 | Real Anaplan / Adaptive Planning API integration | Import returns the same canned drivers and budget lines regardless of what's actually in the connected workspace |
+| Assessor agent runs automatically over time | The verdict and note are seeded on two ledger entries to show the pattern; there's no simulated time-passage that generates these from a live run |
 | The standalone 12-screen click-through prototype shown earlier in chat | Reference only, its own sandboxed HTML/JS, never wired to real routes or data |
 
 ## Net effect
 
-The signal → solution design → unified agent studio → publish loop is real and runs end to end against the mock API, including both the no-dev-needed and escalate/handback paths. Everything in the second table is genuinely absent from the running app — flagged here so the next round can pick items deliberately instead of assuming they already exist.
+The full loop is real and runs end to end against the mock API: a signal surfaces on the Command Center landing page → solution design (or the quick-fix fast path) → the unified agent studio, with delegate identity and both the no-dev-needed and escalate/handback paths → published live in Agent Space → running with an exception log and chase/escalate → closing the loop in the Decision Ledger with an assessor agent verdict linked back to the originating signal. Everything in the second table is genuinely absent from the running app — flagged here so the next round can pick items deliberately instead of assuming they already exist.

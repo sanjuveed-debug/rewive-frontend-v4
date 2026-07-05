@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
-import type { SolutionDesign, SolutionTask, SolutionTaskStatus, TaskChannel } from './types';
+import type { QuickSolution, SolutionDesign, SolutionTask, SolutionTaskStatus, TaskChannel } from './types';
 
 export function useSolutionDesign(id: string | undefined) {
   return useQuery({
@@ -41,6 +41,33 @@ export function useSendForApproval(id: string) {
 
 export function useApproveSolution(id: string) {
   return useSolutionMutation(id, '/approve');
+}
+
+// ---------- Solution in hand (fast path — reviewer already has a fix) ----------
+export function useCreateQuickSolution() {
+  return useMutation({
+    mutationFn: async (vars: { signalId: string; description: string }) =>
+      (await apiClient.post<QuickSolution>('/quick-solutions', vars)).data,
+  });
+}
+
+export function useQuickSolution(id: string | undefined) {
+  return useQuery({
+    queryKey: ['quick-solutions', id],
+    queryFn: async () => (await apiClient.get<QuickSolution>(`/quick-solutions/${id}`)).data,
+    enabled: !!id,
+  });
+}
+
+export function useConfirmQuickSolution(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await apiClient.post<QuickSolution>(`/quick-solutions/${id}/confirm`)).data,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['quick-solutions', id], updated);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
 }
 
 // ---------- Tasks (assigned across all solution designs, "Operate → Tasks") ----------

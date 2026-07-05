@@ -30,6 +30,8 @@ import {
   peopleDirectory,
   auditLog,
   kpiCatalog,
+  runExceptions,
+  runChases,
 } from './data.js';
 
 const app = express();
@@ -92,6 +94,44 @@ app.get('/api/v1/runs', (req, res) => {
   const { status } = req.query;
   const filtered = !status || status === 'all' ? runs : runs.filter((r) => r.status === status);
   res.json(filtered);
+});
+
+// ---------- Runs: exception log and chase & escalate ----------
+// Registered before the generic '/runs/:id' route below, so literal paths like
+// '/runs/exceptions' and '/runs/chases' aren't swallowed as a run id lookup.
+let runExceptionsState = [...runExceptions];
+let runChasesState = [...runChases];
+
+app.get('/api/v1/runs/exceptions', (req, res) => {
+  const { status } = req.query;
+  res.json(status && status !== 'all' ? runExceptionsState.filter((e) => e.status === status) : runExceptionsState);
+});
+
+app.post('/api/v1/runs/exceptions/:id/resolve', (req, res) => {
+  const exception = runExceptionsState.find((e) => e.id === req.params.id);
+  if (!exception) return res.status(404).json({ message: 'Exception not found' });
+  exception.status = 'resolved';
+  logAudit('decision', exception.runId, `resolved exception: ${exception.message}`);
+  res.json(exception);
+});
+
+app.get('/api/v1/runs/chases', (req, res) => res.json(runChasesState));
+
+app.post('/api/v1/runs/:runId/flag-feedback', (req, res) => {
+  const run = runs.find((r) => r.id === req.params.runId);
+  if (!run) return res.status(404).json({ message: 'Run not found' });
+  const chase = {
+    id: `chase-${Date.now()}`,
+    runId: run.id,
+    runName: run.name,
+    trigger: 'feedback',
+    note: req.body.text,
+    escalatedTo: 'the agent owner, for tuning',
+    createdAt: new Date().toISOString(),
+  };
+  runChasesState = [...runChasesState, chase];
+  logAudit('decision', run.id, `feedback flagged and escalated: ${req.body.text}`);
+  res.json(chase);
 });
 
 app.get('/api/v1/runs/:id', (req, res) => {
@@ -493,14 +533,32 @@ let suggestedSignalsState = [...suggestedSignals];
 let kpiTicketsState = [...kpiTickets];
 
 app.get('/api/v1/signals/suggested', (req, res) => {
-  const { connectionId } = req.query;
-  const result = connectionId ? suggestedSignalsState.filter((s) => s.sourceConnectionIds.includes(connectionId)) : suggestedSignalsState;
+  const { connectionId, persona } = req.query;
+  let result = connectionId ? suggestedSignalsState.filter((s) => s.sourceConnectionIds.includes(connectionId)) : suggestedSignalsState;
+  result = filterByPersona(result, persona);
   res.json(result);
 });
 
 app.get('/api/v1/signals/:id/detail', (req, res) => {
   const detail = signalDetails[req.params.id];
   if (!detail) return res.status(404).json({ message: 'No detail available for this signal' });
+  res.json(detail);
+});
+
+app.post('/api/v1/signals/:id/request-unmask', (req, res) => {
+  const detail = signalDetails[req.params.id];
+  if (!detail) return res.status(404).json({ message: 'No detail available for this signal' });
+  detail.piiUnmaskRequested = true;
+  logAudit('signal', req.params.id, 'requested to unmask PII, reason logged');
+  res.json(detail);
+});
+
+app.post('/api/v1/signals/:id/similar/:matchId/request-access', (req, res) => {
+  const detail = signalDetails[req.params.id];
+  const match = detail?.similarSignals.find((s) => s.id === req.params.matchId);
+  if (!detail || !match) return res.status(404).json({ message: 'No matching signal found' });
+  match.accessRequested = true;
+  logAudit('signal', req.params.id, `requested access to restricted signal ${req.params.matchId}`);
   res.json(detail);
 });
 
@@ -591,6 +649,13 @@ function findTask(taskId) {
   for (const solution of solutionDesigns.values()) {
     const task = solution.taskList.find((t) => t.id === taskId);
     if (task) return { task, solution };
+  }
+  for (const quick of quickSolutions.values()) {
+    const task = quick.tasks.find((t) => t.id === taskId);
+    if (task) {
+      const signal = suggestedSignalsState.find((s) => s.id === quick.signalId);
+      return { task, solution: { id: quick.id, signalName: `Quick fix: ${signal?.name ?? quick.signalId}`, updatedAt: quick.createdAt } };
+    }
   }
   return null;
 }
@@ -690,13 +755,63 @@ app.post('/api/v1/solutions/:id/approve', (req, res) => {
   res.json(solution);
 });
 
-// ---------- Tasks (assigned across all solution designs) ----------
+// ---------- Solution in hand (fast path — reviewer already has a fix) ----------
+const quickSolutions = new Map();
+
+function makeQuickSolutionTasks() {
+  const stamp = Date.now();
+  return [
+    { id: `qt-${stamp}-1`, type: 'human_task', title: 'Carry out the described fix', owner: 'You', status: 'proposed', channel: 'app', comments: [] },
+    { id: `qt-${stamp}-2`, type: 'human_task', title: 'Confirm the fix resolved the signal', owner: 'You', status: 'proposed', channel: 'app', comments: [] },
+  ];
+}
+
+app.post('/api/v1/quick-solutions', (req, res) => {
+  const { signalId, description } = req.body;
+  const signal = suggestedSignalsState.find((s) => s.id === signalId);
+  if (!signal) return res.status(404).json({ message: 'Signal not found' });
+  const id = `qs-${Date.now()}`;
+  const quick = {
+    id,
+    signalId,
+    description,
+    status: 'pending_confirmation',
+    tasks: makeQuickSolutionTasks(),
+    createdAt: new Date().toISOString(),
+  };
+  quickSolutions.set(id, quick);
+  logAudit('signal', signalId, 'described a solution in hand, broken into tasks');
+  res.json(quick);
+});
+
+app.get('/api/v1/quick-solutions/:id', (req, res) => {
+  const quick = quickSolutions.get(req.params.id);
+  if (!quick) return res.status(404).json({ message: 'Quick solution not found' });
+  res.json(quick);
+});
+
+app.post('/api/v1/quick-solutions/:id/confirm', (req, res) => {
+  const quick = quickSolutions.get(req.params.id);
+  if (!quick) return res.status(404).json({ message: 'Quick solution not found' });
+  quick.status = 'confirmed';
+  logAudit('signal', quick.signalId, 'confirmed the solution in hand — tasks assigned and notified');
+  res.json(quick);
+});
+
+// ---------- Tasks (assigned across all solution designs, and confirmed quick solutions) ----------
 app.get('/api/v1/tasks', (req, res) => {
   const { status } = req.query;
   const all = [];
   for (const solution of solutionDesigns.values()) {
     for (const task of solution.taskList) {
       all.push({ ...task, solutionId: solution.id, solutionName: solution.signalName });
+    }
+  }
+  for (const quick of quickSolutions.values()) {
+    if (quick.status !== 'confirmed') continue;
+    const signal = suggestedSignalsState.find((s) => s.id === quick.signalId);
+    for (const task of quick.tasks) {
+      all.push({ ...task, solutionId: quick.id, solutionName: `Quick fix: ${signal?.name ?? quick.signalId}` });
     }
   }
   res.json(status && status !== 'all' ? all.filter((t) => t.status === status) : all);
@@ -766,6 +881,15 @@ app.post('/api/v1/agent-specs', (req, res) => {
     testRunResult: null,
     escalation: null,
     handback: null,
+    delegateIdentity: {
+      delegateName: task.title.replace(/ (response )?agent$/i, ''),
+      tone: 'direct',
+      communicationStyle: 'data_first',
+      responseType: 'proactive',
+      escalationTemperament: 30,
+      workingHours: 'business_hours',
+      whenUnsure: 'Pauses and asks the business owner directly, rather than guessing or applying a default action.',
+    },
   };
   agentSpecs.set(id, spec);
   task.agentSpecId = id;
@@ -785,6 +909,14 @@ app.patch('/api/v1/agent-specs/:id/business', (req, res) => {
   if (intent !== undefined) spec.intent = intent;
   if (capabilities !== undefined) spec.capabilities = capabilities;
   pushVersion(spec, 'Updated the business plan', 'business');
+  res.json(spec);
+});
+
+app.patch('/api/v1/agent-specs/:id/delegate', (req, res) => {
+  const spec = agentSpecs.get(req.params.id);
+  if (!spec) return res.status(404).json({ message: 'Agent spec not found' });
+  spec.delegateIdentity = { ...spec.delegateIdentity, ...req.body };
+  pushVersion(spec, 'Updated the delegate identity', 'business');
   res.json(spec);
 });
 

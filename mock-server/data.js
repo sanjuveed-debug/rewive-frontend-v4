@@ -173,6 +173,16 @@ export const runs = [
   { id: 'run-vendor-recon', name: 'Vendor reconciliation · weekly', owner: { name: 'Devaki', initials: 'DH', avatarBg: '#0D9488' }, agentName: 'Recon Agent', status: 'failed', duration: '0m 41s', outcome: 'source timeout · retried ✓' },
 ];
 
+export const runExceptions = [
+  { id: 'exc1', runId: 'run-vendor-recon', runName: 'Vendor reconciliation · weekly', severity: 'error', message: 'Source SFTP connection timed out after 3 retries — run failed.', status: 'open', createdAt: '2h ago' },
+  { id: 'exc2', runId: 'run-close-may', runName: 'Month-end close · May', severity: 'warning', message: 'Agent is unsure how to classify 2 reconciliation exceptions — needs your input.', status: 'open', createdAt: '3h ago' },
+  { id: 'exc3', runId: 'run-anomaly-daily', runName: 'Pricing anomaly scan · daily', severity: 'info', message: 'Connector latency was elevated for 4 minutes, retried automatically, no data lost.', status: 'resolved', createdAt: '1d ago' },
+];
+
+export const runChases = [
+  { id: 'chase1', runId: 'run-close-may', runName: 'Month-end close · May', trigger: 'sla', note: 'Review gate has waited 3h 12m with no response — past the 2h service window.', escalatedTo: 'Praveen Jagadeesan’s manager', createdAt: '1h ago' },
+];
+
 export const decisionStats = {
   trackedQtd: { value: 142, delta: { label: '▲ 38 vs last qtr', direction: 'up' } },
   winRate: { value: '78%', delta: { label: '▲ from 61%', direction: 'up' } },
@@ -181,8 +191,8 @@ export const decisionStats = {
 };
 
 export const decisionLedger = [
-  { id: 'led1', title: 'Reprice SKU 2210 family in UAE', subtitle: 'Margin leakage driver #1, May run', madeBy: { type: 'human', name: 'Praveen', initials: 'PJ', avatarBg: '#D97706' }, informedBy: { type: 'agent', name: 'Profitability Agent' }, date: '12 May', verdict: 'worked', measuredImpact: { text: '+$210k / qtr', direction: 'up' }, function: 'finance' },
-  { id: 'led2', title: 'Consolidate 3 logistics vendors', subtitle: 'Cost optimization recommendation', madeBy: { type: 'human', name: 'Ganesh', initials: 'GR', avatarBg: '#4F46E5' }, informedBy: { type: 'agent', name: 'Cost Agent' }, date: '28 Apr', verdict: 'worked', measuredImpact: { text: '+$95k / qtr', direction: 'up' }, function: 'procurement' },
+  { id: 'led1', title: 'Reprice SKU 2210 family in UAE', subtitle: 'Margin leakage driver #1, May run', madeBy: { type: 'human', name: 'Praveen', initials: 'PJ', avatarBg: '#D97706' }, informedBy: { type: 'agent', name: 'Profitability Agent' }, date: '12 May', verdict: 'worked', measuredImpact: { text: '+$210k / qtr', direction: 'up' }, function: 'finance', originatingSignalId: 'sig1', assessorNote: 'Assessor agent: margin on the SKU 4417/2210 family recovered from -6.2% to -1.1% within 6 weeks of repricing, well ahead of the 3-week target — independently confirmed against the same gross-margin field used to raise the original signal.' },
+  { id: 'led2', title: 'Consolidate 3 logistics vendors', subtitle: 'Cost optimization recommendation', madeBy: { type: 'human', name: 'Ganesh', initials: 'GR', avatarBg: '#4F46E5' }, informedBy: { type: 'agent', name: 'Cost Agent' }, date: '28 Apr', verdict: 'worked', measuredImpact: { text: '+$95k / qtr', direction: 'up' }, function: 'procurement', originatingSignalId: 'sig3', assessorNote: 'Assessor agent: invoice overlap across the 3 flagged vendors dropped to zero after consolidation — confirmed against the same vendor invoice feed, closing the signal that raised it.' },
   { id: 'led3', title: 'Hold hiring for support roles', subtitle: 'Forecast showed demand dip', madeBy: { type: 'human', name: 'Devaki', initials: 'DH', avatarBg: '#0D9488' }, informedBy: { type: 'agent', name: 'Forecast Agent' }, date: '21 Apr', verdict: 'too_early', measuredImpact: { text: 'measuring…', direction: 'flat' }, function: 'hr' },
   { id: 'led4', title: 'Extend payment terms — distributor KSA', subtitle: 'Cash-flow scenario B', madeBy: { type: 'human', name: 'Praveen', initials: 'PJ', avatarBg: '#D97706' }, informedBy: { type: 'agent', name: 'Forecast Agent' }, date: '14 Apr', verdict: 'not_worked', measuredImpact: { text: '−$40k DSO cost', direction: 'down' }, function: 'finance' },
   { id: 'led5', title: 'Shift Q2 spend to performance channels', subtitle: 'Customer-mix insight, March run', madeBy: { type: 'human', name: 'Sanju', initials: 'SJ', avatarBg: '#0D9488' }, informedBy: { type: 'agent', name: 'Profitability Agent' }, date: '02 Apr', verdict: 'worked', measuredImpact: { text: '+18% ROAS', direction: 'up' }, function: 'finance' },
@@ -701,11 +711,11 @@ export function getOutputPreview(outputType) {
 
 // ---------- Signal Studio ----------
 export const suggestedSignals = [
-  { id: 'sig1', name: 'KSA SKU margin erosion', description: 'Margin on SKU 4417 family has fallen 6.2% in KSA over the trailing quarter.', category: 'derailer', sourceConnectionIds: ['conn1', 'conn2'], computableNow: true, approvalStatus: 'suggested', lineage: [{ connectionId: 'conn2', fieldsUsed: ['gross_margin', 'sku_family', 'region'] }] },
-  { id: 'sig2', name: 'Support hiring demand dip', description: 'Forecasted support ticket volume is trending below plan — a hiring-hold candidate.', category: 'laggard', sourceConnectionIds: ['conn1'], computableNow: true, approvalStatus: 'pending_review', lineage: [{ connectionId: 'conn1', fieldsUsed: ['ticket_volume', 'region'] }] },
-  { id: 'sig3', name: 'Vendor invoice cost drainer', description: 'Three logistics vendors show overlapping invoice line items — consolidation candidate.', category: 'cost_drainer', sourceConnectionIds: ['conn3'], computableNow: false, approvalStatus: 'suggested', lineage: [{ connectionId: 'conn3', fieldsUsed: ['vendor_name', 'line_item'] }] },
-  { id: 'sig4', name: 'Discount-driven revenue leakage', description: 'Channel discounts rose 3.1 pts QoQ but only drove 0.8 pts of volume — a negative price-volume trade.', category: 'revenue_leakage', sourceConnectionIds: ['conn1'], computableNow: true, approvalStatus: 'approved', lineage: [{ connectionId: 'conn1', fieldsUsed: ['discount_pct', 'volume'] }] },
-  { id: 'sig5', name: 'DSO drift — KSA distributor', description: 'Days sales outstanding for the KSA distributor has drifted 12 days above target.', category: 'derailer', sourceConnectionIds: ['conn2'], computableNow: true, approvalStatus: 'suggested', lineage: [{ connectionId: 'conn2', fieldsUsed: ['dso', 'region'] }] },
+  { id: 'sig1', name: 'KSA SKU margin erosion', description: 'Margin on SKU 4417 family has fallen 6.2% in KSA over the trailing quarter.', category: 'derailer', sourceConnectionIds: ['conn1', 'conn2'], computableNow: true, approvalStatus: 'suggested', lineage: [{ connectionId: 'conn2', fieldsUsed: ['gross_margin', 'sku_family', 'region'] }], persona: 'store_manager' },
+  { id: 'sig2', name: 'Support hiring demand dip', description: 'Forecasted support ticket volume is trending below plan — a hiring-hold candidate.', category: 'laggard', sourceConnectionIds: ['conn1'], computableNow: true, approvalStatus: 'pending_review', lineage: [{ connectionId: 'conn1', fieldsUsed: ['ticket_volume', 'region'] }], persona: 'operations_head' },
+  { id: 'sig3', name: 'Vendor invoice cost drainer', description: 'Three logistics vendors show overlapping invoice line items — consolidation candidate.', category: 'cost_drainer', sourceConnectionIds: ['conn3'], computableNow: false, approvalStatus: 'suggested', lineage: [{ connectionId: 'conn3', fieldsUsed: ['vendor_name', 'line_item'] }], persona: 'operations_head' },
+  { id: 'sig4', name: 'Discount-driven revenue leakage', description: 'Channel discounts rose 3.1 pts QoQ but only drove 0.8 pts of volume — a negative price-volume trade.', category: 'revenue_leakage', sourceConnectionIds: ['conn1'], computableNow: true, approvalStatus: 'approved', lineage: [{ connectionId: 'conn1', fieldsUsed: ['discount_pct', 'volume'] }], persona: 'cfo' },
+  { id: 'sig5', name: 'DSO drift — KSA distributor', description: 'Days sales outstanding for the KSA distributor has drifted 12 days above target.', category: 'derailer', sourceConnectionIds: ['conn2'], computableNow: true, approvalStatus: 'suggested', lineage: [{ connectionId: 'conn2', fieldsUsed: ['dso', 'region'] }], persona: 'cfo' },
 ];
 
 export const signalDetails = {
@@ -714,6 +724,7 @@ export const signalDetails = {
     whySurfaced: 'Margin on the SKU 4417 family has fallen 6.2% in KSA over the trailing quarter, crossing the derailer threshold for two consecutive months.',
     prognosis: { impactRange: 'SAR 180,000 - 260,000', confidence: 'high', trend: 'down', timeframe: 'next quarter' },
     piiMasked: true,
+    piiUnmaskRequested: false,
     datasetRows: [
       { date: '18 Jun', label: 'SKU 4417-A repricing', maskedField: 'E****42', variance: '-6.8%' },
       { date: '11 Jun', label: 'SKU 4417-B repricing', maskedField: 'E****42', variance: '-5.9%' },
@@ -733,7 +744,7 @@ export const signalDetails = {
           ],
         },
       },
-      { id: 'sim2', label: 'Affiliated group company, packaged foods division - same pattern', scope: 'restricted' },
+      { id: 'sim2', label: 'Affiliated group company, packaged foods division - same pattern', scope: 'restricted', accessRequested: false },
     ],
   },
   sig2: {
@@ -741,6 +752,7 @@ export const signalDetails = {
     whySurfaced: 'Forecasted support ticket volume has fallen below plan for three straight weeks, a leading indicator that current hiring plans may overshoot demand.',
     prognosis: { impactRange: '$40,000 - $70,000', confidence: 'medium', trend: 'down', timeframe: 'next 2 quarters' },
     piiMasked: true,
+    piiUnmaskRequested: false,
     datasetRows: [
       { date: '20 Jun', label: 'Weekly ticket volume, region 1', maskedField: 'M****07', variance: '-9.2%' },
       { date: '13 Jun', label: 'Weekly ticket volume, region 1', maskedField: 'M****07', variance: '-7.5%' },
@@ -754,6 +766,7 @@ export const signalDetails = {
     whySurfaced: 'Three logistics vendors show overlapping invoice line items for the same lanes, a consolidation candidate that is not yet computable end to end.',
     prognosis: { impactRange: '$18,000 - $30,000', confidence: 'low', trend: 'flat', timeframe: 'ongoing' },
     piiMasked: true,
+    piiUnmaskRequested: false,
     datasetRows: [
       { date: '15 Jun', label: 'Vendor invoice overlap, lane 4', maskedField: 'V****88', variance: '+2.1%' },
     ],
@@ -764,6 +777,7 @@ export const signalDetails = {
     whySurfaced: 'Channel discounts rose 3.1 points quarter over quarter but only drove 0.8 points of volume, a negative price-volume trade already approved for a KPI ticket.',
     prognosis: { impactRange: '$95,000 - $140,000', confidence: 'high', trend: 'down', timeframe: 'this quarter' },
     piiMasked: true,
+    piiUnmaskRequested: false,
     datasetRows: [
       { date: '01 Jun', label: 'Channel discount ladder, tier 2', maskedField: 'D****21', variance: '+3.1%' },
     ],
@@ -774,11 +788,12 @@ export const signalDetails = {
     whySurfaced: 'Days sales outstanding for the KSA distributor has drifted 12 days above target over 6 weeks, tracking with a change in invoice approval routing.',
     prognosis: { impactRange: 'SAR 220,000 working capital', confidence: 'medium', trend: 'down', timeframe: 'next 6 weeks' },
     piiMasked: true,
+    piiUnmaskRequested: false,
     datasetRows: [
       { date: '19 Jun', label: 'Invoice approval routing, KSA', maskedField: 'F****55', variance: '+12 days' },
     ],
     similarSignals: [
-      { id: 'sim4', label: 'Affiliated group company, same distributor network', scope: 'restricted' },
+      { id: 'sim4', label: 'Affiliated group company, same distributor network', scope: 'restricted', accessRequested: false },
     ],
   },
 };

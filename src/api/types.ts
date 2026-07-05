@@ -94,6 +94,32 @@ export interface RunDetail {
   steps: TimelineStep[];
 }
 
+// ---------- Runs: exception log and chase & escalate ----------
+export type ExceptionSeverity = 'info' | 'warning' | 'error';
+export type ExceptionStatus = 'open' | 'resolved';
+
+export interface RunException {
+  id: string;
+  runId: string;
+  runName: string;
+  severity: ExceptionSeverity;
+  message: string;
+  status: ExceptionStatus;
+  createdAt: string;
+}
+
+export type ChaseTrigger = 'sla' | 'feedback';
+
+export interface ChaseEscalation {
+  id: string;
+  runId: string;
+  runName: string;
+  trigger: ChaseTrigger;
+  note: string;
+  escalatedTo: string;
+  createdAt: string;
+}
+
 export interface DecisionStats {
   trackedQtd: { value: number; delta: Delta };
   winRate: { value: string; delta: Delta };
@@ -112,6 +138,8 @@ export interface DecisionLedgerItem {
   date: string;
   verdict: Verdict;
   measuredImpact: { text: string; direction: 'up' | 'down' | 'flat' };
+  originatingSignalId?: string;
+  assessorNote?: string;
 }
 
 export interface LeaderboardHighlight {
@@ -441,6 +469,7 @@ export interface SuggestedSignal {
   computableNow: boolean;
   approvalStatus: 'suggested' | 'pending_review' | 'approved' | 'rejected';
   lineage: SignalLineageEntry[];
+  persona: Persona;
 }
 
 export interface ReviewCommitteeMember {
@@ -528,6 +557,7 @@ export interface SimilarSignalMatch {
   label: string;
   scope: 'same_group' | 'restricted';
   priorSolution?: PriorSolutionOutcome;
+  accessRequested?: boolean;
 }
 
 export interface SignalPrognosis {
@@ -543,7 +573,20 @@ export interface SignalDetail {
   prognosis: SignalPrognosis;
   datasetRows: SignalDatasetRow[];
   piiMasked: boolean;
+  piiUnmaskRequested: boolean;
   similarSignals: SimilarSignalMatch[];
+}
+
+// ---------- Solution in hand (fast path — reviewer already has a fix) ----------
+export type QuickSolutionStatus = 'drafting' | 'pending_confirmation' | 'confirmed';
+
+export interface QuickSolution {
+  id: string;
+  signalId: string;
+  description: string;
+  status: QuickSolutionStatus;
+  tasks: SolutionTask[];
+  createdAt: string;
 }
 
 // ---------- Solution design ----------
@@ -629,6 +672,21 @@ export interface AgentSpecCapability {
   selected: boolean;
 }
 
+export type AgentTone = 'direct' | 'diplomatic' | 'warm' | 'formal';
+export type AgentCommunicationStyle = 'concise' | 'data_first' | 'story_first';
+export type AgentResponseType = 'proactive' | 'wait_to_be_asked' | 'scheduled_digest';
+export type AgentWorkingHours = 'business_hours' | 'always_on' | 'custom';
+
+export interface AgentDelegateIdentity {
+  delegateName: string;
+  tone: AgentTone;
+  communicationStyle: AgentCommunicationStyle;
+  responseType: AgentResponseType;
+  escalationTemperament: number;
+  workingHours: AgentWorkingHours;
+  whenUnsure: string;
+}
+
 export interface AgentSpec {
   id: string;
   name: string;
@@ -644,6 +702,7 @@ export interface AgentSpec {
   intent: string;
   capabilities: AgentSpecCapability[];
   planPreview: string[];
+  delegateIdentity: AgentDelegateIdentity;
   // developer altitude
   dataContract: string[];
   permissions: string[];

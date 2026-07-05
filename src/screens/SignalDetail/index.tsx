@@ -1,9 +1,10 @@
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { useSuggestedSignals, useSignalDetail } from '../../api/signalStudio';
+import { useSuggestedSignals, useSignalDetail, useRequestUnmask, useRequestSimilarAccess } from '../../api/signalStudio';
 import { useCreateSolutionDesign } from '../../api/solutionDesign';
 import { Pill } from '../../components/shared/Pill';
 import { Loading, ErrorMessage } from '../../components/shared/StateMessage';
 import { useToast } from '../../components/shared/Toast';
+import { QuickSolutionPanel } from './QuickSolutionPanel';
 import type { SignalCategory, Verdict } from '../../api/types';
 
 const categoryTone: Record<SignalCategory, 'red' | 'amber' | 'indigo' | 'teal' | 'gray'> = {
@@ -30,6 +31,8 @@ export function SignalDetailScreen() {
   const { data: signals, isLoading: signalsLoading } = useSuggestedSignals();
   const { data: detail, isLoading: detailLoading, isError } = useSignalDetail(signalId);
   const createSolution = useCreateSolutionDesign();
+  const requestUnmask = useRequestUnmask(signalId ?? '');
+  const requestAccess = useRequestSimilarAccess(signalId ?? '');
 
   if (signalsLoading || detailLoading) return <section className="screen"><Loading /></section>;
   const signal = signals?.find((s) => s.id === signalId);
@@ -82,8 +85,17 @@ export function SignalDetailScreen() {
           </tbody>
         </table>
         {detail.piiMasked && (
-          <div style={{ padding: '10px 20px', fontSize: 11, color: 'var(--ink-3)', borderTop: '1px solid var(--border)' }}>
-            Names and IDs are masked for every viewer by default. Unmasking requires a documented reason and is itself logged.
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 20px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 11, color: 'var(--ink-3)', flex: 1 }}>
+              Names and IDs are masked for every viewer by default. Unmasking requires a documented reason and is itself logged.
+            </div>
+            {detail.piiUnmaskRequested ? (
+              <Pill tone="amber">unmask requested</Pill>
+            ) : (
+              <button className="btn ghost sm" disabled={requestUnmask.isPending} onClick={() => requestUnmask.mutate(undefined, { onSuccess: () => showToast('Unmask request logged') })}>
+                Request to unmask
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -103,24 +115,36 @@ export function SignalDetailScreen() {
                 </div>
               </>
             )}
+            {s.scope === 'restricted' && (
+              s.accessRequested ? (
+                <Pill tone="amber">access requested</Pill>
+              ) : (
+                <button className="btn ghost sm" disabled={requestAccess.isPending} onClick={() => requestAccess.mutate(s.id, { onSuccess: () => showToast('Access requested') })}>
+                  Request access
+                </button>
+              )
+            )}
           </div>
         ))}
       </div>
 
-      <button
-        className="btn primary"
-        disabled={createSolution.isPending}
-        onClick={() =>
-          createSolution.mutate(signal.id, {
-            onSuccess: (solution) => {
-              showToast('Solution design started');
-              navigate(`/build/solutions/${solution.id}`);
-            },
-          })
-        }
-      >
-        Solution design
-      </button>
+      <div style={{ marginBottom: 12 }}>
+        <button
+          className="btn primary"
+          disabled={createSolution.isPending}
+          onClick={() =>
+            createSolution.mutate(signal.id, {
+              onSuccess: (solution) => {
+                showToast('Solution design started');
+                navigate(`/build/solutions/${solution.id}`);
+              },
+            })
+          }
+        >
+          Solution design
+        </button>
+      </div>
+      <QuickSolutionPanel signalId={signal.id} />
     </section>
   );
 }

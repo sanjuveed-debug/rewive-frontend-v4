@@ -13,6 +13,7 @@ import { Pill } from '../../components/shared/Pill';
 import { Loading, ErrorMessage } from '../../components/shared/StateMessage';
 import { HandoffCard } from '../../components/shared/HandoffCard';
 import { useToast } from '../../components/shared/Toast';
+import { DelegateIdentityPanel } from './DelegateIdentityPanel';
 import type { AgentAltitude, AgentSpec, AgentSpecStatus } from '../../api/types';
 
 const statusTone: Record<AgentSpecStatus, 'gray' | 'amber' | 'teal' | 'green'> = {
@@ -71,6 +72,8 @@ function AgentStudioBody({ spec }: { spec: AgentSpec }) {
       {spec.needsTechnicalWork && spec.status === 'drafting' && (
         <div className="concept-note">The validation agent flagged this may need a new data connector &mdash; consider escalating to a developer below.</div>
       )}
+
+      <DelegateIdentityPanel spec={spec} />
 
       {altitude === 'business' && (
         <div className="card" style={{ marginBottom: 16, padding: '16px 20px' }}>
