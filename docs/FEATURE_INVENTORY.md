@@ -34,6 +34,10 @@ Rebuilt from the static HTML prototype so every data point comes from an API ins
 
 | Feature | Where |
 |---|---|
+| **KPI Library** — onboarding starting point, now the default Build landing page. Two paths: select KPIs from an industry catalog (organized by industry segment — Hospital / Clinic / Pharmacy chain — and by function/category — financial / operational / clinical / patient experience), or import drivers and budget from a planning tool. Every KPI shows exactly which data it needs, and a tracked-KPIs panel shows connected vs. still-needed data — this is what determines whether Signal Studio can compute against it | `/build/kpis` |
+| Healthcare KPI catalog — 21 researched KPIs (ALOS, bed occupancy, 30-day readmission, net margin, days in AR, etc. for hospitals; no-show rate, revenue per visit, provider utilization, etc. for clinics; gross margin per script, generic dispensing rate, DIR fee impact, etc. for pharmacy chains) | KPI Library catalog |
+| Anaplan / Workday Adaptive Planning added as real connector types, reusing the existing Data Connectors approval flow; importing from one pulls in mock drivers and budget lines and marks that KPI's data as already connected | KPI Library → Import tab, Data Connectors |
+| Add a custom KPI by drivers — name plus any number of driver/data-source pairs, for anything not in the catalog | KPI Library |
 | Signal Detail — why a signal was surfaced, impact prognosis, underlying dataset with PII masked by default, similar signals across stores *and* domains with prior-solution outcomes (cost, value generated, verdict) | `/insights/signals/:signalId` |
 | Signal Studio simplified — committee-review and KPI-ticket tabs removed; signals go straight from the list into Signal Detail | `/insights/signals` |
 | Solution Design document — spec (approach, data needed, owner, guardrails), separate from a build, with copy-and-tweak from a prior similar-signal solution | `/build/solutions/:id` |
@@ -66,6 +70,8 @@ Rebuilt from the static HTML prototype so every data point comes from an API ins
 | Assessor agent — independent post-run impact assessment feeding a verdict back into the Decision Ledger | Distinct from the validation agent, which reviews the *plan*, not the outcome |
 | Decision Ledger close-the-loop visual (verdict writing back to close the originating signal) | Not started |
 | Real Teams / Slack / ServiceNow integration behind the Tasks channel selector | Selector exists; no external delivery |
+| KPI catalog for industries beyond Healthcare (Retail, Manufacturing, Financial Services, etc.) | Only Hospital / Clinic / Pharmacy chain are researched and seeded so far — the segment picker is ready to take more |
+| Real Anaplan / Adaptive Planning API integration | Import returns the same canned drivers and budget lines regardless of what's actually in the connected workspace |
 | The standalone 12-screen click-through prototype shown earlier in chat | Reference only, its own sandboxed HTML/JS, never wired to real routes or data |
 
 ## Net effect
