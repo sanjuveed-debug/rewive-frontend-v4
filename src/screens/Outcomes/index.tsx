@@ -28,19 +28,23 @@ export function OutcomesScreen() {
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <button
             className="btn ghost"
-            onClick={() => exportReport.mutate('pptx', { onSuccess: () => showToast('Exported board-ready deck — 9 slides') })}
+            disabled={exportReport.isPending}
+            onClick={() => exportReport.mutate('md', { onSuccess: () => showToast('Report downloaded as Markdown') })}
           >
-            Export PPT
+            Export MD
           </button>
           <button
             className="btn ghost"
-            onClick={() => exportReport.mutate('pdf', { onSuccess: () => showToast('PDF exported') })}
+            disabled={exportReport.isPending}
+            onClick={() => exportReport.mutate('pdf', { onSuccess: () => showToast('Opened print dialog for PDF export') })}
           >
             PDF
           </button>
           <button
             className="btn primary"
-            onClick={() => share.mutate(undefined, { onSuccess: (res) => showToast(`Share link copied — view-only, expires in ${res.expiresInDays} days`) })}
+            disabled
+            title="Sharing is not supported yet"
+            onClick={() => share.mutate(undefined, { onError: () => showToast('Sharing is not supported yet') })}
           >
             Share
           </button>

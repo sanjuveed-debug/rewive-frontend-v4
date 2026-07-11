@@ -41,7 +41,7 @@ function TemperamentDial({ value }: { value: number }) {
   );
 }
 
-function AgentCard({ agent, mandateCount, findings }: { agent: ShadowAgent; mandateCount: number; findings: Finding[] }) {
+function AgentCard({ agent, mandateCount, findings }: { agent: ShadowAgent; mandateCount: number | '—'; findings: Finding[] }) {
   const [open, setOpen] = useState(false);
   const openFindings = findings.filter((f) => f.streamKey === agent.streamKey && f.status === 'open');
   const o = agent.humanOwner;
@@ -98,7 +98,7 @@ function AgentCard({ agent, mandateCount, findings }: { agent: ShadowAgent; mand
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone?: 'amber' | 'red' }) {
+function Stat({ label, value, tone }: { label: string; value: number | string; tone?: 'amber' | 'red' }) {
   const color = tone === 'red' ? 'var(--red)' : tone === 'amber' ? 'var(--amber)' : 'var(--ink)';
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '8px 10px' }}>
@@ -119,8 +119,12 @@ export function ShadowOrgScreen() {
   const allFindings = findings ?? [];
   const chief = org.agents.find((a) => a.reportsToAgentId === null);
   const streamAgents = org.agents.filter((a) => a.reportsToAgentId !== null);
-  const mandateCount = (a: ShadowAgent) =>
-    a.watchesNodeIds.filter((id) => brain?.nodes.find((n) => n.id === id && (n.kind === 'stream_kpi' || n.kind === 'target'))).length;
+  // The real backend has no watches_node_ids column (mapped to [] honestly), so a
+  // per-agent mandate count can't be computed — show '—' rather than a false zero.
+  const mandateCount = (a: ShadowAgent): number | '—' =>
+    a.watchesNodeIds.length > 0
+      ? a.watchesNodeIds.filter((id) => brain?.nodes.find((n) => n.id === id && (n.kind === 'stream_kpi' || n.kind === 'target'))).length
+      : '—';
 
   const totalOpen = streamAgents.reduce((s, a) => s + a.openFindings, 0);
   const totalBreaches = streamAgents.reduce((s, a) => s + a.slaBreaches, 0);

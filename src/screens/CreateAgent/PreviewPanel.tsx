@@ -1,50 +1,57 @@
-import { useAgentPreview, useSessionPreview } from '../../api/agentBuilder';
 import { Avatar } from '../../components/shared/Avatar';
-import { Loading, ErrorMessage } from '../../components/shared/StateMessage';
+import { getCurrentUser } from '../../api/auth';
+import type { CreatedAgent } from '../../api/agentBuilder';
+import type { AgentDraft } from './index';
 
-export function PreviewPanel({ sessionId, agentId }: { sessionId: string; agentId: string | null }) {
-  const sessionPreview = useSessionPreview(sessionId);
-  const agentPreview = useAgentPreview(agentId ?? undefined);
+export function PreviewPanel({ draft, createdAgent }: { draft: AgentDraft; createdAgent: CreatedAgent | null }) {
+  const isLive = !!createdAgent;
+  const currentUser = getCurrentUser();
 
-  const preview = agentId ? agentPreview.data : sessionPreview.data;
-  const isLoading = agentId ? agentPreview.isLoading : sessionPreview.isLoading;
-  const isError = agentId ? agentPreview.isError : sessionPreview.isError;
+  const name = createdAgent?.name ?? draft.name ?? '—';
+  const category = createdAgent?.category ?? draft.category;
+  const toolCount = createdAgent?.tool_names?.length ?? draft.toolNames.length;
+  const model = createdAgent?.model ?? draft.model;
+  const maxTurns = createdAgent?.max_turns ?? draft.maxTurns;
 
   return (
     <div className="card preview">
       <div className="ph">
         ⚡ Agent preview
-        <span className={`pill ${preview?.state === 'live' ? 'green' : 'gray'}`} style={{ marginLeft: 'auto' }}>
-          {preview?.state === 'live' ? 'Live' : 'Draft'}
+        <span className={`pill ${isLive ? 'green' : 'gray'}`} style={{ marginLeft: 'auto' }}>
+          {isLive ? 'Live' : 'Draft'}
         </span>
       </div>
-      {isLoading && <Loading />}
-      {isError && <ErrorMessage />}
-      {preview && (
-        <>
-          <div className="pv-row"><span className="l">Name</span><span className="v">{preview.name}</span></div>
-          <div className="pv-row"><span className="l">Function</span><span className="v">{preview.function}</span></div>
-          <div className="pv-row"><span className="l">Capabilities</span><span className="v">{preview.capabilitiesCount} selected</span></div>
-          <div className="pv-row"><span className="l">Data inputs</span><span className="v">{preview.dataInputs}</span></div>
-          <div className="pv-row"><span className="l">Review gate</span><span className="v">{preview.reviewGate}</span></div>
-          <div className="pv-row">
-            <span className="l">Accountable owner</span>
-            <span className="v">
-              <span className="human">
-                <Avatar initials={preview.owner.initials} background={preview.owner.avatarBg} size={20} fontSize={9} />
-                {preview.owner.name}
-              </span>
+      <div className="pv-row"><span className="l">Name</span><span className="v">{name || '—'}</span></div>
+      <div className="pv-row"><span className="l">Category</span><span className="v">{category.replace('_', ' ')}</span></div>
+      <div className="pv-row"><span className="l">Tools</span><span className="v">{toolCount} selected</span></div>
+      <div className="pv-row"><span className="l">Model</span><span className="v">{model}</span></div>
+      <div className="pv-row"><span className="l">Max turns</span><span className="v">{maxTurns}</span></div>
+      <div className="pv-row">
+        <span className="l">Accountable owner</span>
+        <span className="v">
+          {currentUser ? (
+            <span className="human">
+              <Avatar initials={currentUser.name.slice(0, 2).toUpperCase()} background="var(--accent-soft)" size={20} fontSize={9} />
+              {currentUser.name}
             </span>
-          </div>
-          <div className="pv-row"><span className="l">Guardrails</span><span className="v">{preview.guardrails}</span></div>
-          <div className="pv-row"><span className="l">Est. runtime</span><span className="v">{preview.estRuntime}</span></div>
-          <div className="pv-foot">
-            <div style={{ fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.5 }}>
-              Every run is logged to the Decision Ledger with its outcome, owner and impact — that's the accountability contract.
-            </div>
-          </div>
-        </>
-      )}
+          ) : (
+            '—'
+          )}
+        </span>
+      </div>
+      <div className="pv-row">
+        <span className="l">Focus area</span>
+        <span className="v" style={{ maxWidth: 220, textAlign: 'right' }}>
+          {(createdAgent?.focus_area ?? draft.focusArea) || '—'}
+        </span>
+      </div>
+      <div className="pv-foot">
+        <div style={{ fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.5 }}>
+          {isLive
+            ? 'This agent is live and will show up in Agent Space. Every run is logged with its outcome, owner and impact.'
+            : 'Fill in the form and create the agent — it goes live immediately on the real backend.'}
+        </div>
+      </div>
     </div>
   );
 }

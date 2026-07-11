@@ -3,19 +3,23 @@ import { Pill } from '../../components/shared/Pill';
 import { Loading, ErrorMessage } from '../../components/shared/StateMessage';
 import { useKpiCatalog, useTrackedKpis, useTrackKpi, useAddCustomKpi } from '../../api/kpiLibrary';
 import { useToast } from '../../components/shared/Toast';
-import type { KpiCategory, KpiDriver, KpiSegment } from '../../api/types';
+import type { KpiDriver, KpiSegment } from '../../api/types';
 
+// Real backend segments are FMCG finance categories (revenue|margin|cost|cash),
+// not the old healthcare union baked into KpiSegment — cast the literal keys.
 const segments: { key: KpiSegment; label: string }[] = [
-  { key: 'hospital', label: 'Hospital' },
-  { key: 'clinic', label: 'Clinic' },
-  { key: 'pharmacy', label: 'Pharmacy chain' },
+  { key: 'revenue' as KpiSegment, label: 'Revenue' },
+  { key: 'margin' as KpiSegment, label: 'Margin' },
+  { key: 'cost' as KpiSegment, label: 'Cost' },
+  { key: 'cash' as KpiSegment, label: 'Cash' },
 ];
 
-const categoryTone: Record<KpiCategory, 'indigo' | 'teal' | 'red' | 'amber'> = {
-  financial: 'indigo',
-  operational: 'teal',
-  clinical: 'red',
-  patient_experience: 'amber',
+// Catalog `category` mirrors `segment` on the real backend (e.g. "cash", "cost").
+const categoryTone: Record<string, 'indigo' | 'teal' | 'red' | 'amber' | 'gray'> = {
+  revenue: 'indigo',
+  margin: 'teal',
+  cost: 'red',
+  cash: 'amber',
 };
 
 function CustomKpiForm() {
@@ -75,7 +79,7 @@ function CustomKpiForm() {
 }
 
 export function SelectKpisTab() {
-  const [segment, setSegment] = useState<KpiSegment>('hospital');
+  const [segment, setSegment] = useState<KpiSegment>('revenue' as KpiSegment);
   const { data: catalog, isLoading, isError } = useKpiCatalog(segment);
   const { data: tracked } = useTrackedKpis();
   const trackKpi = useTrackKpi();
@@ -101,7 +105,7 @@ export function SelectKpisTab() {
         return (
           <div key={k.id} className="card" style={{ padding: '16px 20px', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <Pill tone={categoryTone[k.category]}>{k.category.replace('_', ' ')}</Pill>
+              <Pill tone={categoryTone[k.category] ?? 'gray'}>{k.category.replace('_', ' ')}</Pill>
               <div style={{ fontWeight: 600, fontSize: 13.5, flex: 1 }}>{k.name}</div>
               <button
                 className={isTracked ? 'btn ghost sm' : 'btn primary sm'}
@@ -114,7 +118,7 @@ export function SelectKpisTab() {
             <div style={{ fontSize: 12.5, color: 'var(--ink-2)', marginBottom: 4 }}>{k.definition}</div>
             <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginBottom: 6 }}>Formula: {k.formula}</div>
             <div style={{ fontSize: 11.5, color: 'var(--ink-2)' }}>
-              Data needed: {k.driversNeeded.map((d) => `${d.name} (${d.dataSource})`).join(', ')}
+              Data needed: {k.driversNeeded.map((d) => (d.dataSource ? `${d.name} (${d.dataSource})` : d.name)).join(', ')}
             </div>
           </div>
         );

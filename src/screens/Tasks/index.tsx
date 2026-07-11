@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pill } from '../../components/shared/Pill';
 import { Loading, ErrorMessage } from '../../components/shared/StateMessage';
-import { useTasks, useAddTaskFeedback, useUpdateTaskStatus, useUpdateTaskChannel } from '../../api/solutionDesign';
+import { useTasks, useTaskComments, useAddTaskFeedback, useUpdateTaskStatus, useUpdateTaskChannel } from '../../api/solutionDesign';
 import type { SolutionTask, SolutionTaskStatus, SolutionTaskType, TaskChannel } from '../../api/types';
 
 const typeTone: Record<SolutionTaskType, { tone: 'indigo' | 'teal' | 'gray'; label: string }> = {
@@ -27,6 +27,9 @@ function TaskRow({ task }: { task: SolutionTask }) {
   const addFeedback = useAddTaskFeedback();
   const updateStatus = useUpdateTaskStatus();
   const updateChannel = useUpdateTaskChannel();
+  // Real per-task comments live at GET /api/tasks/{id}/comments, separate from
+  // the (always-empty) `comments` field useTasks() returns.
+  const { data: comments } = useTaskComments(task.id);
   const stageIndex = advanceStages.indexOf(task.status);
   const nextStage = stageIndex >= 0 ? advanceStages[stageIndex + 1] : undefined;
 
@@ -55,13 +58,13 @@ function TaskRow({ task }: { task: SolutionTask }) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
-        {task.comments.map((c) => (
+        {(comments ?? []).map((c) => (
           <div key={c.id} style={{ fontSize: 12.5 }}>
             <b>{c.authorName}</b> <span style={{ color: 'var(--ink-3)' }}>&middot; {new Date(c.createdAt).toLocaleString()}</span>
             <div style={{ color: 'var(--ink-2)' }}>{c.text}</div>
           </div>
         ))}
-        {task.comments.length === 0 && <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>No feedback yet.</div>}
+        {(comments ?? []).length === 0 && <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>No feedback yet.</div>}
       </div>
 
       <div style={{ display: 'flex', gap: 8 }}>

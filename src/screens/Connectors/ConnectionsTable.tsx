@@ -15,9 +15,20 @@ const statusTone: Record<ConnectionStatus, 'amber' | 'green' | 'red' | 'gray'> =
   error: 'red',
 };
 
+// The real backend has no public audit-log endpoint yet (see api/auditLog.ts) —
+// useAuditLog honestly resolves to an empty array, so this row always renders
+// the same "nothing yet" empty state used elsewhere (e.g. Runs/ExceptionLog).
 function HistoryRow({ connectionId }: { connectionId: string }) {
   const { data } = useAuditLog('connection', connectionId);
-  if (!data?.length) return <tr><td colSpan={6} style={{ color: 'var(--ink-3)', fontSize: 12 }}>No history yet.</td></tr>;
+  if (!data?.length) {
+    return (
+      <tr>
+        <td colSpan={6}>
+          <div className="state-msg">No history yet — the backend doesn't expose an audit log endpoint yet.</div>
+        </td>
+      </tr>
+    );
+  }
   return (
     <tr>
       <td colSpan={6}>

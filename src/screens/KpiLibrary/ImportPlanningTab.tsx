@@ -53,10 +53,15 @@ export function ImportPlanningTab() {
             )}
             {result && (
               <div style={{ marginTop: 10, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-2)', marginBottom: 4 }}>Drivers imported</div>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-2)', marginBottom: 4 }}>Import result</div>
                 {result.driversImported.map((d, i) => <div key={i} style={{ fontSize: 12, color: 'var(--ink-2)' }}>{d.name}: {d.value}</div>)}
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-2)', margin: '8px 0 4px' }}>Budget lines imported</div>
-                {result.budgetLinesImported.map((b, i) => <div key={i} style={{ fontSize: 12, color: 'var(--ink-2)' }}>{b.name}: {b.amount}</div>)}
+                <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>See "Your tracked KPIs" below for the individual columns now tracked.</div>
+                {result.budgetLinesImported.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-2)', margin: '8px 0 4px' }}>Budget lines imported</div>
+                    {result.budgetLinesImported.map((b, i) => <div key={i} style={{ fontSize: 12, color: 'var(--ink-2)' }}>{b.name}: {b.amount}</div>)}
+                  </>
+                )}
               </div>
             )}
           </div>

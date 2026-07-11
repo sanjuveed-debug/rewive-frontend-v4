@@ -9,6 +9,8 @@ const severityTone: Record<ExceptionSeverity, 'red' | 'amber' | 'gray'> = {
   info: 'gray',
 };
 
+// The real backend has no exception-log concept — useRunExceptions honestly resolves to an
+// empty array (no network call), so this section always renders the empty state below.
 export function ExceptionLog() {
   const { data: exceptions } = useRunExceptions();
   const resolve = useResolveException();
@@ -20,7 +22,7 @@ export function ExceptionLog() {
   return (
     <div className="card" style={{ marginBottom: 16, padding: '16px 20px' }}>
       <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 10 }}>Exception log</div>
-      {exceptions?.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>No exceptions.</div>}
+      {exceptions?.length === 0 && <div className="state-msg">No exceptions tracked — the backend doesn't have an exception log yet.</div>}
       {[...open, ...resolved].map((e) => (
         <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderTop: '1px solid var(--border)' }}>
           <Pill tone={severityTone[e.severity]}>{e.severity}</Pill>

@@ -38,17 +38,16 @@ export function SolutionDesignScreen() {
 
   const matchesWithSolutions = signalDetail?.similarSignals.filter((s) => s.priorSolution) ?? [];
   const approved = solution.status === 'approved';
-  // Solutions opened by a finding's "act" disposition carry the finding id as signalId (v4).
-  const fromFinding = /-f-/.test(solution.signalId);
 
   return (
     <section className="screen">
+      {/* v4 solution designs are always finding-based (signalId holds the real finding_id) — link straight to the Finding detail screen. */}
       <Link
-        to={fromFinding ? `/insights/findings/${solution.signalId}` : `/insights/signals/${solution.signalId}`}
+        to={`/insights/findings/${solution.signalId}`}
         className="btn ghost sm"
         style={{ marginBottom: 14, display: 'inline-flex' }}
       >
-        &larr; {fromFinding ? 'Finding' : 'Signal detail'}
+        &larr; Finding
       </Link>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
@@ -78,7 +77,7 @@ export function SolutionDesignScreen() {
               <button
                 className="btn sm"
                 disabled={copySolution.isPending}
-                onClick={() => copySolution.mutate({ fromSimilarSignalId: s.id }, { onSuccess: () => showToast('Copied and ready to tweak') })}
+                onClick={() => copySolution.mutate({ fromSolutionId: s.id }, { onSuccess: () => showToast('Copied and ready to tweak') })}
               >
                 Copy and tweak
               </button>

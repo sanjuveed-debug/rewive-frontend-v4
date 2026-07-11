@@ -13,6 +13,9 @@ export function TopPerformerCard() {
       </div>
       {isLoading && <Loading />}
       {isError && <ErrorMessage />}
+      {!isLoading && !isError && !data && (
+        <div className="state-msg">No completed tasks this week yet.</div>
+      )}
       {data && (
         <div style={{ padding: '4px 20px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
           <Avatar initials={data.initials} background={data.avatarBg} size={42} fontSize={15} />

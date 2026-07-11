@@ -1,7 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
+import { RequireAuth } from './components/layout/RequireAuth';
 import { ToastProvider } from './components/shared/Toast';
+import { LoginScreen } from './screens/Login';
 import { CommandCenterScreen } from './screens/CommandCenter';
 import { CreateAgentScreen } from './screens/CreateAgent';
 import { RunsScreen } from './screens/Runs';
@@ -12,7 +14,6 @@ import { ConnectorsScreen } from './screens/Connectors';
 import { AgentSpaceScreen } from './screens/AgentSpace';
 import { AgentDetailScreen } from './screens/AgentSpace/Detail';
 import { AgentStudioScreen } from './screens/AgentStudio';
-import { SignalDetailScreen } from './screens/SignalDetail';
 import { FindingsScreen } from './screens/Findings';
 import { FindingDetailScreen } from './screens/Findings/Detail';
 import { SolutionDesignScreen } from './screens/SolutionDesign';
@@ -36,11 +37,14 @@ function App() {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public landing — the Agentic Operating Model, no app chrome */}
-            <Route path="/" element={<LandingScreen />} />
+            <Route path="login" element={<LoginScreen />} />
 
-            <Route element={<AppLayout />}>
-              <Route path="command" element={<CommandCenterScreen />} />
+            <Route element={<RequireAuth />}>
+              {/* Landing — the Agentic Operating Model industry picker, no app chrome */}
+              <Route path="/" element={<LandingScreen />} />
+
+              <Route element={<AppLayout />}>
+                <Route path="command" element={<CommandCenterScreen />} />
               <Route path="operate" element={<Navigate to="/command" replace />} />
 
               <Route path="operate/shadow" element={<ShadowOrgScreen />} />
@@ -68,9 +72,9 @@ function App() {
               <Route path="insights/findings" element={<FindingsScreen />} />
               <Route path="insights/findings/:findingId" element={<FindingDetailScreen />} />
               <Route path="insights/closure" element={<ClosureScreen />} />
-              {/* v3 signals evolved into findings — the studio list redirects, detail stays for old signal links */}
+              {/* v3 signals evolved into findings; Signal Studio has no real backend (dead code even in the source design) — both redirect */}
               <Route path="insights/signals" element={<Navigate to="/insights/findings" replace />} />
-              <Route path="insights/signals/:signalId" element={<SignalDetailScreen />} />
+              <Route path="insights/signals/:signalId" element={<Navigate to="/insights/findings" replace />} />
 
               {/* v1 URL redirects, kept working for old bookmarks/links */}
               <Route path="runs" element={<Navigate to="/operate/runs" replace />} />
@@ -78,7 +82,8 @@ function App() {
               <Route path="create" element={<Navigate to="/build/create" replace />} />
               <Route path="people" element={<Navigate to="/insights/people" replace />} />
               <Route path="outcomes" element={<Navigate to="/insights/outcomes/latest" replace />} />
-              <Route path="outcomes/:runId" element={<LegacyOutcomeRedirect />} />
+                <Route path="outcomes/:runId" element={<LegacyOutcomeRedirect />} />
+              </Route>
             </Route>
           </Routes>
         </BrowserRouter>

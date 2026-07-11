@@ -4,6 +4,9 @@ import { useRuns } from '../../api/runs';
 import { useRunChases, useFlagRunFeedback } from '../../api/runs';
 import { useToast } from '../../components/shared/Toast';
 
+// The real backend has no SLA chase/escalation tracking — useRunChases honestly resolves to
+// an empty array, and flagging feedback has nowhere to go, so the form below is disabled with
+// an explanatory tooltip rather than pretending to succeed.
 export function ChaseEscalateList() {
   const { data: chases } = useRunChases();
   const { data: runList } = useRuns();
@@ -16,6 +19,8 @@ export function ChaseEscalateList() {
     <div className="card" style={{ marginBottom: 16, padding: '16px 20px' }}>
       <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 4 }}>Chase and escalate</div>
       <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginBottom: 10 }}>Stalled steps get chased automatically; you can also flag feedback that routes straight to the agent owner.</div>
+
+      {chases?.length === 0 && <div className="state-msg">No chases or escalations tracked — the backend doesn't support this yet.</div>}
 
       {chases?.map((c) => (
         <div key={c.id} style={{ padding: '9px 0', borderTop: '1px solid var(--border)' }}>
@@ -41,11 +46,15 @@ export function ChaseEscalateList() {
         />
         <button
           className="btn ghost sm"
-          disabled={!runId || !text || flagFeedback.isPending}
+          disabled
+          title="Flagging feedback is not supported by the backend yet"
           onClick={() =>
             flagFeedback.mutate(
               { runId, text },
-              { onSuccess: () => { showToast('Escalated to the agent owner'); setText(''); } }
+              {
+                onSuccess: () => { showToast('Escalated to the agent owner'); setText(''); },
+                onError: () => showToast("Flagging feedback isn't supported by the backend yet"),
+              }
             )
           }
         >

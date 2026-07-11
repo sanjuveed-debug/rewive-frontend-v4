@@ -1,14 +1,11 @@
-import { useRunDetail, usePauseRun } from '../../api/runs';
+import { useRunDetail } from '../../api/runs';
 import { Pill } from '../../components/shared/Pill';
 import { Loading, ErrorMessage } from '../../components/shared/StateMessage';
-import { useToast } from '../../components/shared/Toast';
 
 const dotIcon: Record<string, string> = { done: '✓', live: '●', wait: '', gate: '⏸' };
 
 export function LiveRunCard({ runId }: { runId: string }) {
   const { data, isLoading, isError } = useRunDetail(runId);
-  const pause = usePauseRun();
-  const { showToast } = useToast();
 
   if (isLoading) return <div className="card run-x"><Loading /></div>;
   if (isError || !data) return <div className="card run-x"><ErrorMessage /></div>;
@@ -25,8 +22,8 @@ export function LiveRunCard({ runId }: { runId: string }) {
           <button className="btn ghost sm">Watch</button>
           <button
             className="btn ghost sm"
-            disabled={pause.isPending}
-            onClick={() => pause.mutate(runId, { onSuccess: () => showToast('Run paused') })}
+            disabled
+            title="Pausing runs is not supported by the backend yet"
           >
             Pause
           </button>

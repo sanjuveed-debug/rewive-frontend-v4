@@ -36,7 +36,7 @@ export function TrackedKpisPanel() {
             <button className="btn ghost sm" onClick={() => untrack.mutate(k.id)}>Remove</button>
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--ink-2)', marginTop: 4 }}>
-            Data needed: {k.driversNeeded.map((d) => `${d.name} (${d.dataSource})`).join(', ') || 'none specified'}
+            Data needed: {k.driversNeeded.map((d) => (d.dataSource ? `${d.name} (${d.dataSource})` : d.name)).join(', ') || 'none specified'}
           </div>
         </div>
       ))}

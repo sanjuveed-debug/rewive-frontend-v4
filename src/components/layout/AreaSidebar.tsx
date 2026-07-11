@@ -1,9 +1,15 @@
-import { NavLink, useLocation, useParams } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Avatar } from '../shared/Avatar';
 import { usePendingDecisions } from '../../api/dashboard';
 import { useWorkflows } from '../../api/agentStudio';
 import { getArea, getAreaKeyFromPath } from './areas';
 import { NavIcon } from './NavIcon';
+import { getCurrentUser, clearSession } from '../../api/auth';
+
+function initialsFor(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return parts.slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('') || 'U';
+}
 
 const navClass = ({ isActive }: { isActive: boolean }) => `nav-item${isActive ? ' active' : ''}`;
 const subClass = ({ isActive }: { isActive: boolean }) => `nav-subitem${isActive ? ' active' : ''}`;
@@ -30,6 +36,13 @@ export function AreaSidebar() {
   const area = getArea(getAreaKeyFromPath(pathname));
   const { data: pendingDecisions } = usePendingDecisions();
   const pendingCount = pendingDecisions ? Math.min(pendingDecisions.length, 9) : undefined;
+  const user = getCurrentUser();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    clearSession();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <aside className="side area-side">
@@ -48,11 +61,11 @@ export function AreaSidebar() {
           </div>
         ))}
       </nav>
-      <div className="side-foot">
-        <Avatar initials="KV" background="#4F46E5" />
+      <div className="side-foot" style={{ cursor: 'pointer' }} onClick={handleLogout} title="Sign out">
+        <Avatar initials={user ? initialsFor(user.name) : 'U'} background="#4F46E5" />
         <div>
-          <div className="who">Kumara Vijayan</div>
-          <div className="role">Co-founder · Admin</div>
+          <div className="who">{user?.name ?? 'Unknown user'}</div>
+          <div className="role">{user?.role ?? ''}</div>
         </div>
       </div>
     </aside>

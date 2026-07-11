@@ -1,42 +1,76 @@
 import { useState } from 'react';
-import {
-  useAgentBuilderSession,
-  useSendAgentBuilderMessage,
-  useToggleSelection,
-  useCreateAgent,
-} from '../../api/agentBuilder';
+import { useTools, useCreateAgent, describeAgentFocus, type CreatedAgent } from '../../api/agentBuilder';
 import { Loading, ErrorMessage } from '../../components/shared/StateMessage';
-import { Pill } from '../../components/shared/Pill';
 import { useToast } from '../../components/shared/Toast';
+import { CATEGORY_OPTIONS, MODEL_OPTIONS, type AgentDraft } from './index';
 
-export function ChatPanel({ sessionId, onAgentCreated }: { sessionId: string; onAgentCreated: (agentId: string) => void }) {
-  const { data: session, isLoading, isError } = useAgentBuilderSession(sessionId);
-  const sendMessage = useSendAgentBuilderMessage(sessionId);
-  const toggleSelection = useToggleSelection(sessionId);
+interface ChatPanelProps {
+  draft: AgentDraft;
+  onDraftChange: (draft: AgentDraft) => void;
+  createdAgent: CreatedAgent | null;
+  onAgentCreated: (agent: CreatedAgent) => void;
+}
+
+export function ChatPanel({ draft, onDraftChange, createdAgent, onAgentCreated }: ChatPanelProps) {
+  const { data: tools, isLoading: toolsLoading, isError: toolsError } = useTools();
   const createAgent = useCreateAgent();
   const { showToast } = useToast();
-  const [draft, setDraft] = useState('');
-  const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState(false);
 
-  const handleSend = () => {
-    const text = draft.trim();
-    if (!text) return;
-    setDraft('');
-    sendMessage.mutate(text);
+  const [assistPrompt, setAssistPrompt] = useState('');
+  const [assistLoading, setAssistLoading] = useState(false);
+  const [toolsInitialized, setToolsInitialized] = useState(false);
+
+  // Pre-check default tools once they load, if the user hasn't touched the list yet.
+  if (tools && !toolsInitialized) {
+    setToolsInitialized(true);
+    if (draft.toolNames.length === 0) {
+      onDraftChange({ ...draft, toolNames: tools.filter((t) => t.is_default).map((t) => t.name) });
+    }
+  }
+
+  const update = <K extends keyof AgentDraft>(key: K, value: AgentDraft[K]) => {
+    onDraftChange({ ...draft, [key]: value });
   };
 
-  const handleCreate = () => {
-    setCreating(true);
-    createAgent.mutate(sessionId, {
-      onSuccess: (agent) => {
-        setCreating(false);
-        setCreated(true);
-        onAgentCreated(agent.agentId);
-        showToast(`${agent.name} is live — first run queued`);
+  const toggleTool = (name: string) => {
+    const has = draft.toolNames.includes(name);
+    update('toolNames', has ? draft.toolNames.filter((n) => n !== name) : [...draft.toolNames, name]);
+  };
+
+  const handleAssist = async () => {
+    if (!assistPrompt.trim()) return;
+    setAssistLoading(true);
+    const result = await describeAgentFocus(assistPrompt);
+    setAssistLoading(false);
+    if (result) {
+      update('focusArea', result);
+    } else {
+      showToast("Couldn't generate a description — try writing it directly");
+    }
+  };
+
+  const canSubmit = draft.name.trim().length > 0 && draft.focusArea.trim().length > 0 && !createAgent.isPending;
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    createAgent.mutate(
+      {
+        name: draft.name.trim(),
+        focus_area: draft.focusArea.trim(),
+        category: draft.category,
+        max_turns: draft.maxTurns,
+        model: draft.model,
+        tool_names: draft.toolNames,
+        is_active: true,
       },
-      onError: () => setCreating(false),
-    });
+      {
+        onSuccess: (agent) => {
+          onAgentCreated(agent);
+          showToast(`${agent.name ?? draft.name} is live`);
+        },
+        onError: () => showToast('Could not create the agent — try again'),
+      }
+    );
   };
 
   return (
@@ -44,68 +78,142 @@ export function ChatPanel({ sessionId, onAgentCreated }: { sessionId: string; on
       <div className="chat-head">
         <div className="logo-mark" style={{ width: 26, height: 26, fontSize: 12, borderRadius: 7 }}>R</div>
         <div style={{ fontWeight: 700, fontSize: 13.5 }}>Agent Builder</div>
-        {session?.detectedTemplate && (
-          <span className="pill indigo" style={{ marginLeft: 'auto' }}>{session.detectedTemplate}</span>
-        )}
       </div>
       <div className="chat-body">
-        {isLoading && <Loading label="Starting session…" />}
-        {isError && <ErrorMessage message="Couldn't reach the agent builder." />}
-        {session?.messages.map((m) => (
-          <div className={`msg ${m.role}`} key={m.id}>
-            {m.stepLabel && <div className="mini">{m.stepLabel}</div>}
-            {m.text}
-            {m.choices && (
-              <div className="choice-grid">
-                {m.choices.map((c) => (
-                  <div
-                    key={c.id}
-                    className={`choice${c.selected ? ' on' : ''}`}
-                    onClick={() =>
-                      toggleSelection.mutate({ messageId: m.id, choiceId: c.id, selected: !c.selected })
-                    }
-                  >
-                    <span className="box">{c.selected ? '✓' : ''}</span>
-                    {c.label}
-                  </div>
-                ))}
-              </div>
-            )}
-            {m.plan && (
-              <>
-                <div className="plan">
-                  <div className="p-head">
-                    <span>{m.plan.name}</span>
-                    <Pill tone="green">est. run {m.plan.estRuntime}</Pill>
-                  </div>
-                  {m.plan.steps.map((s) => (
-                    <div className="step" key={s.n}>
-                      <span className="n">{s.n}</span>
-                      {s.text}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: 12, display: 'flex', gap: 10 }}>
-                  <button className="btn primary" disabled={creating || created} onClick={handleCreate}>
-                    {created ? '✓ Agent created' : creating ? 'Building agent…' : 'Create agent'}
-                  </button>
-                  <button className="btn ghost">Refine plan</button>
-                </div>
-              </>
-            )}
+        <div>
+          <label className="mini" style={{ display: 'block', marginBottom: 6 }}>Agent name</label>
+          <input
+            placeholder="e.g. Cashflow Variance Agent"
+            value={draft.name}
+            onChange={(e) => update('name', e.target.value)}
+            disabled={!!createdAgent}
+            style={{
+              width: '100%',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 12,
+              padding: '10px 14px',
+              fontSize: 13.5,
+              fontFamily: 'inherit',
+              background: 'rgba(255,255,255,.05)',
+              color: 'inherit',
+            }}
+          />
+        </div>
+
+        <div>
+          <label className="mini" style={{ display: 'block', marginBottom: 6 }}>Describe in plain English (optional)</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              placeholder="What should this agent watch and report on?"
+              value={assistPrompt}
+              onChange={(e) => setAssistPrompt(e.target.value)}
+              disabled={!!createdAgent}
+              style={{
+                flex: 1,
+                border: '1px solid var(--border-strong)',
+                borderRadius: 12,
+                padding: '10px 14px',
+                fontSize: 13.5,
+                fontFamily: 'inherit',
+                background: 'rgba(255,255,255,.05)',
+                color: 'inherit',
+              }}
+            />
+            <button className="btn ghost sm" onClick={handleAssist} disabled={assistLoading || !!createdAgent}>
+              {assistLoading ? 'Thinking…' : 'Assist'}
+            </button>
           </div>
-        ))}
-      </div>
-      <div className="chat-input">
-        <input
-          placeholder="Reply or refine — e.g. 'add a Saudi market comparison'"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-        />
-        <button className="btn primary" onClick={handleSend} disabled={sendMessage.isPending}>
-          Send
-        </button>
+        </div>
+
+        <div>
+          <label className="mini" style={{ display: 'block', marginBottom: 6 }}>Focus area / description</label>
+          <textarea
+            placeholder="What this agent is responsible for, what it should flag, and how often."
+            value={draft.focusArea}
+            onChange={(e) => update('focusArea', e.target.value)}
+            disabled={!!createdAgent}
+            rows={4}
+            style={{
+              width: '100%',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 12,
+              padding: '10px 14px',
+              fontSize: 13.5,
+              fontFamily: 'inherit',
+              background: 'rgba(255,255,255,.05)',
+              color: 'inherit',
+              resize: 'vertical',
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: 14 }}>
+          <div style={{ flex: 1 }}>
+            <label className="mini" style={{ display: 'block', marginBottom: 6 }}>Category</label>
+            <select
+              value={draft.category}
+              onChange={(e) => update('category', e.target.value)}
+              disabled={!!createdAgent}
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1px solid var(--border-strong)', background: 'rgba(255,255,255,.05)', color: 'inherit', fontFamily: 'inherit', fontSize: 13 }}
+            >
+              {CATEGORY_OPTIONS.map((c) => (
+                <option key={c} value={c}>{c.replace('_', ' ')}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <label className="mini" style={{ display: 'block', marginBottom: 6 }}>Model</label>
+            <select
+              value={draft.model}
+              onChange={(e) => update('model', e.target.value)}
+              disabled={!!createdAgent}
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1px solid var(--border-strong)', background: 'rgba(255,255,255,.05)', color: 'inherit', fontFamily: 'inherit', fontSize: 13 }}
+            >
+              {MODEL_OPTIONS.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ width: 110 }}>
+            <label className="mini" style={{ display: 'block', marginBottom: 6 }}>Max turns</label>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={draft.maxTurns}
+              onChange={(e) => update('maxTurns', Number(e.target.value) || 1)}
+              disabled={!!createdAgent}
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1px solid var(--border-strong)', background: 'rgba(255,255,255,.05)', color: 'inherit', fontFamily: 'inherit', fontSize: 13 }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="mini" style={{ display: 'block', marginBottom: 6 }}>Tools</label>
+          {toolsLoading && <Loading label="Loading tools…" />}
+          {toolsError && <ErrorMessage message="Couldn't load tools." />}
+          {tools && (
+            <div className="choice-grid">
+              {tools.map((t) => (
+                <div
+                  key={t.id}
+                  className={`choice${draft.toolNames.includes(t.name) ? ' on' : ''}`}
+                  onClick={() => !createdAgent && toggleTool(t.name)}
+                  title={t.description}
+                >
+                  <span className="box">{draft.toolNames.includes(t.name) ? '✓' : ''}</span>
+                  {t.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 4 }}>
+          <button className="btn primary" disabled={!canSubmit || !!createdAgent} onClick={handleSubmit}>
+            {createdAgent ? '✓ Agent created' : createAgent.isPending ? 'Creating agent…' : 'Create agent'}
+          </button>
+        </div>
       </div>
     </div>
   );
