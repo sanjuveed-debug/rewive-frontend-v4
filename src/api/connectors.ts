@@ -21,6 +21,19 @@ import type {
 // GET /api/connections (see useConnections below).
 const BASE_CONNECTOR_TYPES: ConnectorType[] = [
   {
+    id: 'powerbi',
+    name: 'Power BI',
+    icon: '📈',
+    description: 'Connect a Power BI workspace via an Azure AD app registration (client-credentials OAuth) to pull real datasets.',
+    isCustom: false,
+    fields: [
+      { key: 'tenant_id', label: 'Azure AD Tenant ID', inputType: 'text', required: true },
+      { key: 'client_id', label: 'App (client) ID', inputType: 'text', required: true },
+      { key: 'client_secret', label: 'Client secret', inputType: 'password', required: true },
+      { key: 'workspace_id', label: 'Power BI Workspace ID', inputType: 'text', required: true },
+    ],
+  },
+  {
     id: 'snowflake',
     name: 'Snowflake',
     icon: '❄️',
@@ -267,9 +280,29 @@ export function useDeleteConnection() {
 }
 
 export function useTestConnection() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) =>
-      (await apiClient.post<{ status: string; message?: string }>(`/api/connections/${id}/test`)).data,
+      (
+        await apiClient.post<{ status: string; message?: string; datasets?: { id: string; name: string }[] }>(
+          `/api/connections/${id}/test`
+        )
+      ).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['connections'] }),
+  });
+}
+
+// Real dataset listing — only meaningful for type='powerbi' connections; the
+// backend performs a genuine Azure AD OAuth token fetch + Power BI REST API
+// call against the connection's real workspace_id.
+export function useConnectionDatasets(id: string | undefined) {
+  return useQuery({
+    queryKey: ['connections', id, 'datasets'],
+    queryFn: async () =>
+      (await apiClient.get<{ datasets: { id: string; name: string }[] }>(`/api/connections/${id}/datasets`)).data
+        .datasets,
+    enabled: !!id,
+    retry: false,
   });
 }
 

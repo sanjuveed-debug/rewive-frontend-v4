@@ -258,6 +258,7 @@ export interface Paginated<T> {
 
 // ---------- Data Connectors ----------
 export type ConnectorTypeKey =
+  | 'powerbi'
   | 'snowflake'
   | 'dynamics'
   | 'salesforce'

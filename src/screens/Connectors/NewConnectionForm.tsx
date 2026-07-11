@@ -13,8 +13,8 @@ export function NewConnectionForm({ connectorType, onClose }: { connectorType: C
     create.mutate(
       { connectorTypeId: connectorType.id, name, config },
       {
-        onSuccess: () => {
-          showToast('Connection submitted for approval');
+        onSuccess: (res) => {
+          showToast(res.status === 'connected' ? `${name} connected` : `${name} created — connection test failed, check credentials`);
           onClose();
         },
       }
@@ -58,7 +58,7 @@ export function NewConnectionForm({ connectorType, onClose }: { connectorType: C
       </div>
       <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
         <button className="btn primary" disabled={!name || create.isPending} onClick={handleSubmit}>
-          Submit for approval
+          {create.isPending ? 'Connecting…' : 'Connect'}
         </button>
         <button className="btn ghost" onClick={onClose}>Cancel</button>
       </div>
