@@ -55,7 +55,7 @@ export function useKpiCatalog(segment?: KpiSegment | 'all') {
     queryKey: ['kpi-catalog', segment],
     queryFn: async () => {
       const params = segment && segment !== 'all' ? { segment } : undefined;
-      const { data } = await apiClient.get<{ catalog: any[] }>('/kpi-library/catalog', { params });
+      const { data } = await apiClient.get<{ catalog: any[] }>('/api/kpi-library/catalog', { params });
       return data.catalog.map(mapCatalogEntry);
     },
   });
@@ -65,7 +65,7 @@ export function useTrackedKpis() {
   return useQuery({
     queryKey: ['tracked-kpis'],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ tracked: any[] }>('/kpi-library/tracked');
+      const { data } = await apiClient.get<{ tracked: any[] }>('/api/kpi-library/tracked');
       return data.tracked.map(mapTrackedKpi);
     },
   });
@@ -75,7 +75,7 @@ export function useTrackKpi() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (kpiId: string) => {
-      const { data } = await apiClient.post<{ tracked_kpi: any }>('/kpi-library/tracked', { kpi_catalog_id: kpiId });
+      const { data } = await apiClient.post<{ tracked_kpi: any }>('/api/kpi-library/tracked', { kpi_catalog_id: kpiId });
       return mapTrackedKpi(data.tracked_kpi);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tracked-kpis'] }),
@@ -88,7 +88,7 @@ export function useAddCustomKpi() {
     mutationFn: async (input: CustomKpiInput) => {
       // Real backend expects `drivers` as string[] (driver names), not
       // {name, dataSource} objects — flatten before sending.
-      const { data } = await apiClient.post<{ tracked_kpi: any }>('/kpi-library/tracked/custom', {
+      const { data } = await apiClient.post<{ tracked_kpi: any }>('/api/kpi-library/tracked/custom', {
         name: input.name,
         drivers: input.drivers.map((d) => d.name),
       });
@@ -101,7 +101,7 @@ export function useAddCustomKpi() {
 export function useUntrackKpi() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => (await apiClient.delete(`/kpi-library/tracked/${id}`)).data,
+    mutationFn: async (id: string) => (await apiClient.delete(`/api/kpi-library/tracked/${id}`)).data,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tracked-kpis'] }),
   });
 }
@@ -120,7 +120,7 @@ export function useImportPlanningData() {
         connectorName: string;
         driversImported: number;
         importedAt: string;
-      }>(`/connections/${connectionId}/import-planning-data`);
+      }>(`/api/connections/${connectionId}/import-planning-data`);
 
       const result: PlanningImportResult = {
         connectionId: data.connectionId,
