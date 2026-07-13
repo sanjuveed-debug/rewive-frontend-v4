@@ -155,6 +155,17 @@ export function useSaveWorkflow(workflowId: string) {
   });
 }
 
+export function useDeleteWorkflow() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (workflowId: string) => (await apiClient.delete<{ ok: boolean }>(`/api/workflows/${workflowId}`)).data,
+    onSuccess: (_data, workflowId) => {
+      queryClient.removeQueries({ queryKey: ['workflows', workflowId] });
+      queryClient.invalidateQueries({ queryKey: ['workflows'] });
+    },
+  });
+}
+
 export function useGenerateProcessPrompt(workflowId: string) {
   return useMutation({
     mutationFn: async (vars: { nodeId: string; instructions: string }) =>

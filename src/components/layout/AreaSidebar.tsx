@@ -1,7 +1,8 @@
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { NavLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Avatar } from '../shared/Avatar';
 import { usePendingDecisions } from '../../api/dashboard';
-import { useWorkflows } from '../../api/agentStudio';
+import { useWorkflows, useDeleteWorkflow } from '../../api/agentStudio';
 import { getArea, getAreaKeyFromPath } from './areas';
 import { NavIcon } from './NavIcon';
 import { getCurrentUser, clearSession } from '../../api/auth';
@@ -17,15 +18,50 @@ const subClass = ({ isActive }: { isActive: boolean }) => `nav-subitem${isActive
 function WorkflowSublist() {
   const { data: workflows } = useWorkflows();
   const { workflowId: activeId } = useParams();
+  const navigate = useNavigate();
+  const deleteWorkflow = useDeleteWorkflow();
 
   if (!workflows?.length) return null;
+
+  const handleDelete = (e: ReactMouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm('Delete this workflow? This cannot be undone.')) return;
+    deleteWorkflow.mutate(id, {
+      onSuccess: () => {
+        if (activeId === id) navigate('/build/studio');
+      },
+    });
+  };
 
   return (
     <div className="nav-sublist">
       {[...workflows].reverse().map((wf) => (
-        <NavLink key={wf.id} to={`/build/studio/${wf.id}`} className={() => subClass({ isActive: wf.id === activeId })}>
-          {wf.name || 'Untitled workflow'} {wf.status === 'draft' ? `· draft v${wf.version}` : '· published'}
-        </NavLink>
+        <div key={wf.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <NavLink
+            to={`/build/studio/${wf.id}`}
+            className={() => subClass({ isActive: wf.id === activeId })}
+            style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {wf.name || 'Untitled workflow'} {wf.status === 'draft' ? `· draft v${wf.version}` : '· published'}
+          </NavLink>
+          <button
+            onClick={(e) => handleDelete(e, wf.id)}
+            disabled={deleteWorkflow.isPending}
+            title="Delete workflow"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--ink-3)',
+              cursor: 'pointer',
+              fontSize: 13,
+              padding: '2px 6px',
+              flexShrink: 0,
+            }}
+          >
+            ✕
+          </button>
+        </div>
       ))}
     </div>
   );
