@@ -29,7 +29,7 @@ export function RunAgentPanel({ agentId, agentName }: { agentId: string; agentNa
   const isFailed = status.data?.status === 'error' || (isComplete && output?.output?.startsWith('Agent error'));
 
   return (
-    <div className="card preview" style={{ maxWidth: 520, marginTop: 16 }}>
+    <div className="card" style={{ maxWidth: 520, marginTop: 16, position: 'relative' }}>
       <div className="ph">▶ Run this agent</div>
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>
