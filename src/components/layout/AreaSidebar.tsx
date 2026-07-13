@@ -97,12 +97,35 @@ export function AreaSidebar() {
           </div>
         ))}
       </nav>
-      <div className="side-foot" style={{ cursor: 'pointer' }} onClick={handleLogout} title="Sign out">
+      <div className="side-foot" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <Avatar initials={user ? initialsFor(user.name) : 'U'} background="#4F46E5" />
-        <div>
-          <div className="who">{user?.name ?? 'Unknown user'}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="who" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name ?? 'Unknown user'}</div>
           <div className="role">{user?.role ?? ''}</div>
         </div>
+        <button
+          onClick={handleLogout}
+          title="Sign out"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 28,
+            height: 28,
+            flexShrink: 0,
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            background: 'transparent',
+            color: 'var(--ink-2)',
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
       </div>
     </aside>
   );
