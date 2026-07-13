@@ -5,6 +5,7 @@ import { Pill } from '../../../components/shared/Pill';
 import { Loading, ErrorMessage } from '../../../components/shared/StateMessage';
 import { industryLabel } from '../industryLabels';
 import { PERSONA_LABEL } from '../../CommandCenter/personas';
+import { RunAgentPanel } from './RunAgentPanel';
 
 export function AgentDetailScreen() {
   const { agentId } = useParams();
@@ -39,6 +40,8 @@ export function AgentDetailScreen() {
           </div>
         )}
       </div>
+
+      <RunAgentPanel agentId={data.agentId} agentName={data.name} />
     </section>
   );
 }
