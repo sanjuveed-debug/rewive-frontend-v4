@@ -19,7 +19,7 @@ export function AgentDetailScreen() {
       <h1 className="page">{data.name}</h1>
       <div className="sub">{data.description}</div>
 
-      <div className="card preview" style={{ maxWidth: 520 }}>
+      <div className="card" style={{ maxWidth: 520, position: 'relative' }}>
         <div className="ph">⚡ Agent detail <Pill tone={data.state === 'live' ? 'green' : 'gray'} style={{ marginLeft: 'auto' }}>{data.state}</Pill></div>
         <div className="pv-row"><span className="l">Function</span><span className="v">{data.function}</span></div>
         <div className="pv-row"><span className="l">Persona</span><span className="v">{PERSONA_LABEL[data.persona]}</span></div>
